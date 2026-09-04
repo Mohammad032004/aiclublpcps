@@ -3,9 +3,22 @@ import { useState, useEffect, useCallback } from "react";
 import { ArrowRight, Calendar, MapPin, Users, RefreshCw, X, Check } from "lucide-react";
 import { SectionHeader, Card, Modal, FormField, showToast, StatusBadge, Spinner } from "@/components/ui";
 
-interface ClubEvent { _id: string; title: string; type: string; description?: string; date?: string; location?: string; maxAttendees?: number; status: "upcoming"|"ongoing"|"past"|"cancelled"; registrationOpen: boolean; tags?: string[]; }
-interface RegForm { name: string; email: string; phone: string; branch: string; year: string; }
-const INIT: RegForm = { name: "", email: "", phone: "", branch: "", year: "" };
+interface ClubEvent {
+  _id: string;
+  title: string;
+  type: string;
+  description?: string;
+  date?: string;
+  location?: string;
+  maxAttendees?: number;
+  maxTeamSize?: number;
+  allowTeams?: boolean;
+  status: "upcoming" | "ongoing" | "past" | "cancelled";
+  registrationOpen: boolean;
+  tags?: string[];
+}
+interface RegForm { name: string; email: string; phone: string; branch: string; year: string; teamSize: string; }
+const INIT: RegForm = { name: "", email: "", phone: "", branch: "", year: "", teamSize: "1" };
 const TYPE_GRADS: Record<string, string> = {
   workshop: "linear-gradient(135deg,#6366f1,#8b5cf6)",
   hackathon: "linear-gradient(135deg,#06b6d4,#6366f1)",
@@ -28,6 +41,8 @@ function RegModal({ event, onClose }: { event: ClubEvent; onClose: () => void })
     if (!form.phone.trim()) e.phone = "Phone number is required";
     if (!form.branch.trim()) e.branch = "Branch is required";
     if (!form.year) e.year = "Please select your year";
+    if (event.allowTeams && (!form.teamSize || Number(form.teamSize) < 1)) e.teamSize = "Please select team size";
+    if (event.allowTeams && event.maxTeamSize && Number(form.teamSize) > event.maxTeamSize) e.teamSize = `Maximum ${event.maxTeamSize} members allowed`;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -36,10 +51,13 @@ function RegModal({ event, onClose }: { event: ClubEvent; onClose: () => void })
     if (!validate()) return;
     setLoading(true);
     try {
-      await fetch("/api/event-registrations", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: event._id, ...form }),
+      const response = await fetch("/api/event-registrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: event._id, ...form, teamSize: event.allowTeams ? Number(form.teamSize) : undefined }),
       });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || data?.message || "Registration failed");
       setDone(true);
     } catch { showToast.error("Registration failed. Please try again."); }
     finally { setLoading(false); }
@@ -83,6 +101,31 @@ function RegModal({ event, onClose }: { event: ClubEvent; onClose: () => void })
           <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option>
         </select>
       </FormField>
+      {event.allowTeams && (
+        <FormField
+          label="Team Member Size"
+          required
+          error={errors.teamSize}
+        >
+          <select
+            className={`input ${errors.teamSize ? "error" : ""}`}
+            value={form.teamSize}
+            onChange={e => {
+              setForm(p => ({ ...p, teamSize: e.target.value }));
+              setErrors(p => ({ ...p, teamSize: undefined }));
+            }}
+          >
+            {Array.from({ length: Math.max(1, event.maxTeamSize || 4) }, (_, i) => i + 1).map(size => (
+              <option key={size} value={size}>
+                {size} {size === 1 ? "Member" : "Members"}
+              </option>
+            ))}
+          </select>
+          <p style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.35rem" }}>
+            {event.maxTeamSize ? `This hackathon allows up to ${event.maxTeamSize} members per team.` : "Select the number of members in your team."}
+          </p>
+        </FormField>
+      )}
       <div style={{ marginTop: "0.5rem" }}>
         <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={submit} disabled={loading}>
           {loading ? <><Spinner size="sm"/> Registering…</> : <>Confirm Registration <ArrowRight size={14}/></>}
@@ -101,12 +144,42 @@ export default function EventsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+
     try {
-      const r = await fetch("/api/events", { cache: "no-store" });
+      const r = await fetch("/api/events", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
+
       const d = await r.json();
-      setEvents(d.events || []);
-    } catch { showToast.error("Failed to load events"); }
-    finally { setLoading(false); }
+
+      if (!r.ok) {
+        throw new Error(d?.error || d?.message || "Failed to load events");
+      }
+
+      // Support both:
+      // { events: [...] }
+      // and a direct [...] API response.
+      const list = Array.isArray(d)
+        ? d
+        : Array.isArray(d?.events)
+          ? d.events
+          : Array.isArray(d?.data)
+            ? d.data
+            : [];
+
+      setEvents(list);
+    } catch (error) {
+      setEvents([]);
+      showToast.error(
+        error instanceof Error ? error.message : "Failed to load events"
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -176,7 +249,18 @@ export default function EventsPage() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginBottom: "0.875rem" }}>
                       {e.date && <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--text2)" }}><Calendar size={12}/>{new Date(e.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>}
                       {e.location && <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--text2)" }}><MapPin size={12}/>{e.location}</span>}
-                      {e.maxAttendees && <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--text2)" }}><Users size={12}/>Max {e.maxAttendees} attendees</span>}
+                      {typeof e.maxAttendees === "number" && e.maxAttendees > 0 && (
+                        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--text2)" }}>
+                          <Users size={12}/>
+                          Max {e.maxAttendees} attendees
+                        </span>
+                      )}
+                      {e.allowTeams && typeof e.maxTeamSize === "number" && e.maxTeamSize > 1 && (
+                        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--text2)" }}>
+                          <Users size={12}/>
+                          Teams up to {e.maxTeamSize}
+                        </span>
+                      )}
                     </div>
                     {e.description && <p style={{ fontSize: "0.85rem", color: "var(--text2)", lineHeight: 1.65, marginBottom: "1rem" }}>{e.description.slice(0, 120)}{e.description.length > 120 ? "…" : ""}</p>}
                     {e.tags && e.tags.length > 0 && <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", marginBottom: "1rem" }}>
