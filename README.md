@@ -1,4 +1,4 @@
-# NexusAI Club Website
+# AI Club Website
 
 Full-featured AI/ML student club website — Next.js 15 App Router + Tailwind CSS + MongoDB + NextAuth.
 
