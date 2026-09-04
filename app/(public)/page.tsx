@@ -48,7 +48,7 @@ export default function HomePage() {
   }, []);
 
   const stats = [
-    { icon: Users, value: 100, label: "Active Members", color: "var(--accent)", bg: "var(--accent-bg)" },
+    { icon: Users, value: 10, label: "Active Members", color: "var(--accent)", bg: "var(--accent-bg)" },
     { icon: FlaskConical, value: 50, label: "Projects Built", color: "var(--purple)", bg: "var(--purple-bg)" },
     { icon: Trophy, value: 20, label: "Awards Won", color: "var(--cyan)", bg: "var(--cyan-bg)" },
     { icon: Calendar, value: 30, label: "Events Held", color: "var(--green)", bg: "var(--green-bg)" },

@@ -37,14 +37,36 @@ export default function Navbar() {
       }}>
         <div className="navbar-inner">
           {/* Logo */}
-          <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Brain size={18} color="white"/>
-            </div>
-            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "var(--text1)" }}>
-              AI-CLUB
-            </span>
-          </Link>
+<Link
+  href="/"
+  style={{
+    textDecoration: "none",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.6rem"
+  }}
+>
+  <img
+    src="/ai-club-logo.png"
+    alt="AI Club"
+    style={{
+      width: 42,
+      height: 42,
+      objectFit: "contain"
+    }}
+  />
+
+  <span
+    style={{
+      fontFamily: "'Space Grotesk', sans-serif",
+      fontWeight: 700,
+      fontSize: "1.15rem",
+      color: "var(--text1)"
+    }}
+  >
+    AI-CLUB
+  </span>
+</Link>
 
           {/* Desktop nav */}
           <div className="hidden-mobile" style={{ display: "flex", gap: "1.75rem", alignItems: "center" }}>
