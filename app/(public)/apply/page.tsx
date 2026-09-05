@@ -155,7 +155,7 @@ export default function ApplyPage() {
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "6rem 1.5rem 4rem" }}>
-      <SectionHeader tag="Join AI-Club" title="Membership Application" subtitle="Batch 2026 · Applications close September 10, 2026" center={false}/>
+      <SectionHeader tag="Join AI-Club" title="Learn. Build. Innovate." subtitle="Batch 2026 · Applications close on September 10, 2026" center={false}/>
 
       {/* Stepper */}
       <div className="stepper">
