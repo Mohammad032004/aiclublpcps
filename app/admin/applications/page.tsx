@@ -7,7 +7,6 @@ import {
   X,
   Trash2,
   Eye,
-  EyeOff,
   RefreshCw,
   Search,
   Download,
@@ -173,75 +172,26 @@ export default function AdminApplicationsPage() {
       const rows = applications.map(
         (a, index) => ({
           "S.No.": index + 1,
-
-          "First Name":
-            a.firstName || "",
-
-          "Last Name":
-            a.lastName || "",
-
-          "Full Name":
-            `${a.firstName || ""} ${
-              a.lastName || ""
-            }`.trim(),
-
-          "Email":
-            a.email || "",
-
-          "Phone":
-            (
-              a as {
-                phone?: string;
-              }
-            ).phone || "",
-
-          "College":
-            (
-              a as {
-                college?: string;
-              }
-            ).college || "",
-
-          "Branch":
-            a.branch || "",
-
-          "Year":
-            a.year || "",
-
-          "CGPA":
-            a.cgpa ?? "",
-
-          "Technical Skills":
-            Array.isArray(a.skills)
-              ? a.skills.join(", ")
-              : a.skills || "",
-
-          "Domains":
-            Array.isArray(a.domains)
-              ? a.domains.join(", ")
-              : a.domains || "",
-
-          "Why Join":
-            a.whyJoin || "",
-
-          "Contribution":
-            a.contribution || "",
-
-          "GitHub":
-            a.github || "",
-
-          "LinkedIn":
-            a.linkedin || "",
-
-          "Status":
-            a.status || "",
-
-          "Submitted At":
-            a.submittedAt
-              ? new Date(
-                  a.submittedAt
-                ).toLocaleString("en-IN")
-              : "",
+          "First Name": a.firstName || "",
+          "Last Name": a.lastName || "",
+          "Full Name": `${a.firstName || ""} ${a.lastName || ""}`.trim(),
+          "Email": a.email || "",
+          "Phone": a.phone || "",
+          "Gender": a.gender || "",
+          "GitHub": a.github || "",
+          "LinkedIn": a.linkedin || "",
+          "Branch": a.branch || "",
+          "Year": a.year || "",
+          "Certifications": a.certifications || "",
+          "Technical Skills": Array.isArray(a.skills) ? a.skills.join(", ") : a.skills || "",
+          "Domains": Array.isArray(a.domains) ? a.domains.join(", ") : a.domains || "",
+          "Experience": a.experience || "",
+          "Project Description": a.projectDesc || "",
+          "Why Join": a.whyJoin || "",
+          "Contribution": a.contribution || "",
+          "Goals": a.goals || "",
+          "Status": a.status || "",
+          "Submitted At": a.submittedAt ? new Date(a.submittedAt).toLocaleString("en-IN") : "",
         })
       );
 
@@ -394,11 +344,13 @@ export default function AdminApplicationsPage() {
 
   const filtered = apps.filter(
     (a) =>
-      `${a.firstName} ${
-        a.lastName
-      } ${a.email} ${
-        a.branch || ""
-      } ${a.year || ""}`
+      `${a.firstName || ""} ${a.lastName || ""} ${a.email || ""} ${
+        a.phone || ""
+      } ${a.gender || ""} ${a.branch || ""} ${a.year || ""} ${
+        a.certifications || ""
+      } ${Array.isArray(a.skills) ? a.skills.join(" ") : a.skills || ""} ${
+        Array.isArray(a.domains) ? a.domains.join(" ") : a.domains || ""
+      } ${a.experience || ""}`
         .toLowerCase()
         .includes(
           search.toLowerCase()
@@ -541,7 +493,7 @@ export default function AdminApplicationsPage() {
           style={{
             paddingLeft: 36,
           }}
-          placeholder="Search name, email, branch…"
+          placeholder="Search name, email, phone, branch, skills…"
           value={search}
           onChange={(e) =>
             setSearch(
@@ -1005,6 +957,11 @@ export default function AdminApplicationsPage() {
             />
 
             <DetailRow
+              label="Gender"
+              value={selected.gender}
+            />
+
+            <DetailRow
               label="GitHub"
               value={
                 selected.github
@@ -1042,17 +999,6 @@ export default function AdminApplicationsPage() {
             </div>
 
             <DetailRow
-              label="College"
-              value={
-                (
-                  selected as {
-                    college?: string;
-                  }
-                ).college
-              }
-            />
-
-            <DetailRow
               label="Branch"
               value={
                 selected.branch
@@ -1063,13 +1009,6 @@ export default function AdminApplicationsPage() {
               label="Year"
               value={
                 selected.year
-              }
-            />
-
-            <DetailRow
-              label="CGPA"
-              value={
-                selected.cgpa
               }
             />
 
@@ -1110,6 +1049,38 @@ export default function AdminApplicationsPage() {
               }
             />
 
+            <DetailRow
+              label="Certifications"
+              value={selected.certifications}
+            />
+
+            {/* EXPERIENCE & PROJECTS */}
+            <div
+              style={{
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                color: "var(--accent2)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                marginBottom: "0.75rem",
+                marginTop: "1rem",
+                paddingBottom: "0.5rem",
+                borderBottom: "1px solid var(--border2)",
+              }}
+            >
+              Experience & Projects
+            </div>
+
+            <DetailRow
+              label="Experience"
+              value={selected.experience}
+            />
+
+            <DetailRow
+              label="Project Description"
+              value={selected.projectDesc}
+            />
+
             {/* STATEMENT */}
             <div
               style={{
@@ -1145,6 +1116,11 @@ export default function AdminApplicationsPage() {
               value={
                 selected.contribution
               }
+            />
+
+            <DetailRow
+              label="Goals"
+              value={selected.goals}
             />
 
             {/* ACTIONS */}
