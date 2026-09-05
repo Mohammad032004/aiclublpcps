@@ -140,9 +140,9 @@ export default function ApplyPage() {
         </div>
         <h2 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Application Submitted!</h2>
         <p style={{ color: "var(--text2)", lineHeight: 1.75, marginBottom: "0.75rem" }}>Thank you, <strong style={{ color: "var(--text1)" }}>{form.firstName}</strong>! Your application for Batch 2026 has been received.</p>
-        <p style={{ color: "var(--text2)", lineHeight: 1.75, marginBottom: "2rem" }}>We'll review and respond to <strong style={{ color: "var(--accent2)" }}>{form.email}</strong> within 7 working days.</p>
+        <p style={{ color: "var(--text2)", lineHeight: 1.75, marginBottom: "2rem" }}>We'll review and respond to <strong style={{ color: "var(--accent2)" }}>{form.email}</strong> within 3 working days.</p>
         <div style={{ background: "var(--accent-bg)", border: "1px solid var(--accent-border)", borderRadius: "var(--radius)", padding: "1rem 1.25rem", marginBottom: "2rem", fontSize: "0.875rem", color: "var(--text2)", lineHeight: 1.7, textAlign: "left" }}>
-          <strong style={{ color: "var(--accent2)" }}>What's next?</strong> Shortlisted candidates will be invited for a brief technical/cultural interview over the next 2 weeks.
+          <strong style={{ color: "var(--accent2)" }}>What's next?</strong> Shortlisted candidates will be invited for a test followed by a short technical/cultural interview over the next 2 weeks.
         </div>
         <button className="btn btn-outline" onClick={() => { setSubmitted(false); setStep(0); setForm(INIT); }}>Submit Another</button>
       </div>
@@ -275,7 +275,7 @@ export default function ApplyPage() {
             <textarea className="input" value={form.goals} onChange={e => up("goals",e.target.value)} placeholder="Research, internships, startup, publications…"/>
           </FormField>
           <div className="alert alert-info" style={{ marginTop: "0.5rem" }}>
-            <span>ℹ</span><span>By submitting, you confirm all information is accurate. Reviewed within 7 working days.</span>
+            <span>ℹ</span><span>By submitting, you confirm all information is accurate. Reviewed within 3 working days.</span>
           </div>
         </>}
       </div>
