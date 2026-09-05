@@ -49,7 +49,7 @@ export default function ContactPage() {
         <div className="grid-2" style={{ maxWidth:1000, margin:"0 auto" }}>
           {/* Info */}
           <div>
-            {[{ icon:MapPin, label:"Location", value:"LPCPS, Lucknow, Uttar Pradesh" },{ icon:Mail, label:"Email", value:"aiclub@lpcps.org" },{ icon:Clock, label:"Response Time", value:"Within 2 working days" }].map(item=>(
+            {[{ icon:MapPin, label:"Location", value:"LPCPS, Lucknow, Uttar Pradesh" },{ icon:Mail, label:"Email", value:"aiclublpcps01@gmail.com" },{ icon:Clock, label:"Response Time", value:"Within 2 working days" }].map(item=>(
               <div key={item.label} style={{ display:"flex", gap:"1rem", marginBottom:"1.75rem" }}>
                 <div style={{ width:44, height:44, borderRadius:12, background:"var(--accent-bg)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><item.icon size={20} color="var(--accent)"/></div>
                 <div><p style={{ fontWeight:600, marginBottom:"0.2rem" }}>{item.label}</p><p style={{ color:"var(--text2)", fontSize:"0.875rem" }}>{item.value}</p></div>
@@ -58,7 +58,7 @@ export default function ContactPage() {
             <div style={{ background:"var(--accent-bg)", border:"1px solid var(--accent-border)", borderRadius:"var(--radius)", padding:"1.25rem" }}>
               <p style={{ fontWeight:600, marginBottom:"0.5rem", color:"var(--accent2)" }}>💡 Quick Links</p>
               <div style={{ display:"flex", flexDirection:"column", gap:"0.4rem" }}>
-                {[["Apply for membership","/apply"],["View upcoming events","/events"],["Explore projects","/projects"]].map(([label,href])=>(
+                {[["Apply for AI-Club","/apply"],["View upcoming events","/events"],["Explore projects","/projects"]].map(([label,href])=>(
                   <a key={href} href={href} style={{ color:"var(--text2)", fontSize:"0.875rem", textDecoration:"none" }}>→ {label}</a>
                 ))}
               </div>
