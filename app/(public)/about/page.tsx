@@ -25,92 +25,10 @@ interface TeamMember {
   email?: string;
   visible: boolean;
   order: number;
-  github?: string;
   linkedin?: string;
+  github?: string;
 }
 
-interface StaticTeamMember {
-  name: string;
-  role: string;
-  dept?: string;
-  bio?: string;
-}
-
-interface StaticTeamTier {
-  tier: string;
-  members: StaticTeamMember[];
-}
-
-/* =====================================================
-   STATIC FALLBACK TEAM
-====================================================== */
-
-const STATIC_TEAM: StaticTeamTier[] = [
-  {
-    tier: "Faculty Head",
-    members: [
-      {
-        name: "Dr. R. Verma",
-        role: "Faculty Head",
-        dept: "Computer Science & Engineering",
-        bio: "15+ years of AI/ML research. PhD from IIT Delhi. Guiding the club's academic direction.",
-      },
-    ],
-  },
-
-  {
-    tier: "Leadership",
-    members: [
-      {
-        name: "Aryan Kumar",
-        role: "Club President",
-        dept: "CSE (AI/ML) · 3rd Year",
-        bio: "ML engineer. 3 national hackathon wins. Leads club strategy and growth.",
-      },
-      {
-        name: "Priya Sharma",
-        role: "Vice President",
-        dept: "Data Science · 3rd Year",
-        bio: "NLP researcher. Fine-tunes large language models. HuggingFace contributor.",
-      },
-    ],
-  },
-
-  {
-    tier: "Core Members",
-    members: [
-      {
-        name: "Sneha Rao",
-        role: "NLP Lead",
-        dept: "CSE · 2nd Year",
-        bio: "Multilingual NLP specialist. Loves open-source.",
-      },
-      {
-        name: "Vikram Agarwal",
-        role: "Cybersecurity Lead",
-        dept: "IT · 3rd Year",
-        bio: "CTF champion. Adversarial ML and network security.",
-      },
-      {
-        name: "Riya Mehta",
-        role: "Events Lead",
-        dept: "CSE · 2nd Year",
-        bio: "Organizes workshops & hackathons. 500+ attendees managed.",
-      },
-      {
-        name: "Kavya Pillai",
-        role: "Design & Dev Lead",
-        dept: "CSE · 2nd Year",
-        bio: "Full-stack developer. Builds all club platforms.",
-      },
-    ],
-  },
-
-  {
-    tier: "Members",
-    members: [],
-  },
-];
 
 /* =====================================================
    TIER COLORS
@@ -247,49 +165,6 @@ export default function AboutPage() {
   }, [filteredDBTeam]);
 
   /* ===================================================
-     FILTER STATIC TEAM
-  ================================================== */
-
-  const filteredStaticTeam = useMemo(() => {
-    const searchValue = teamSearch.trim().toLowerCase();
-
-    const filterToTier: Record<string, string> = {
-      leadership: "Leadership",
-      core: "Core Members",
-      member: "Members",
-    };
-
-    return STATIC_TEAM.map((tier) => {
-      const matchesFilter =
-        teamFilter === "all" ||
-        normalizeTier(tier.tier) === teamFilter;
-
-      if (!matchesFilter) {
-        return { ...tier, members: [] };
-      }
-
-      if (!searchValue) {
-        return tier;
-      }
-
-      return {
-        ...tier,
-        members: tier.members.filter((member) => {
-          const searchableText = `
-            ${member.name}
-            ${member.role}
-            ${tier.tier}
-            ${member.dept || ""}
-            ${member.bio || ""}
-          `.toLowerCase();
-
-          return searchableText.includes(searchValue);
-        }),
-      };
-    }).filter((tier) => tier.members.length > 0);
-  }, [teamSearch, teamFilter]);
-
-  /* ===================================================
      DATABASE TEAM EXISTS
   ================================================== */
 
@@ -334,314 +209,236 @@ export default function AboutPage() {
     member: TeamMember,
     index: number
   ) => {
+    const linkedInUrl = member.linkedin || member.github;
+
     return (
       <Card
         key={member._id}
         hover
         style={{
           width: "100%",
-          maxWidth: 400,
-          height: "auto",
+          maxWidth: 360,
           minHeight: 0,
-          padding: "1.25rem 1.5rem",
-          borderRadius: 18,
+          padding: 0,
+          borderRadius: 22,
+          overflow: "hidden",
           textAlign: "center",
           background: "var(--surface)",
           border: "1px solid var(--border2)",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
           boxSizing: "border-box",
           transition:
-            "transform 0.25s ease, box-shadow 0.25s ease",
+            "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease",
         }}
       >
-        {/* Avatar */}
+        {/* Accent header */}
         <div
           style={{
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: "0.6rem",
+            height: 7,
+            width: "100%",
+            background:
+              "linear-gradient(90deg,var(--accent),var(--purple))",
           }}
-        >
-          <Avatar
-            name={member.name}
-            size="lg"
-            index={index}
-          />
-        </div>
+        />
 
-        {/* Name */}
-        <h3
+        <div
           style={{
-            fontSize: "1rem",
-            fontWeight: 700,
-            margin: "0 0 0.35rem",
-            color: "var(--text1)",
-            lineHeight: 1.3,
-            wordBreak: "break-word",
+            padding: "1.5rem 1.5rem 1.35rem",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
-          {member.name}
-        </h3>
-
-        {/* Role */}
-        {member.role && (
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "4px 11px",
-              borderRadius: 999,
-              background: "var(--accent-bg)",
-              color: "var(--accent2)",
-              border:
-                "1px solid var(--accent-border)",
-              fontSize: "0.67rem",
-              fontWeight: 700,
-              marginBottom: "0.6rem",
-              lineHeight: 1.3,
-              textAlign: "center",
-              whiteSpace: "normal",
-            }}
-          >
-            {member.role}
-          </span>
-        )}
-
-        {/* Department + Course */}
-        {(member.department || member.course) && (
-          <p
-            style={{
-              fontSize: "0.72rem",
-              color: "var(--text3)",
-              lineHeight: 1.4,
-              margin: "0 0 0.6rem",
-              maxWidth: 360,
-              wordBreak: "break-word",
-            }}
-          >
-            {member.department}
-
-            {member.department &&
-              member.course && <> • </>}
-
-            {member.course}
-          </p>
-        )}
-
-        {/* Full Bio */}
-        {member.bio && (
-          <p
-            style={{
-              fontSize: "0.77rem",
-              color: "var(--text2)",
-              lineHeight: 1.5,
-              margin: "0 0 0.75rem",
-              maxWidth: 360,
-
-              /*
-               * IMPORTANT:
-               * No line clamp.
-               * No fixed height.
-               */
-              display: "block",
-              overflow: "visible",
-              whiteSpace: "normal",
-              wordBreak: "break-word",
-              overflowWrap: "break-word",
-            }}
-          >
-            {member.bio}
-          </p>
-        )}
-
-        {/* Actions */}
-        {(member.email ||
-          member.github ||
-          member.linkedin) && (
+          {/* Avatar */}
           <div
             style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "0.4rem",
-              flexWrap: "wrap",
-              width: "100%",
+              padding: 4,
+              borderRadius: "50%",
+              background:
+                "linear-gradient(135deg,var(--accent),var(--purple))",
+              marginBottom: "0.8rem",
+              boxShadow: "0 8px 24px rgba(99,102,241,0.18)",
             }}
           >
-            {/* Contact */}
-            {member.email && (
-              <a
-                href={`mailto:${member.email}`}
-                className="btn btn-primary btn-sm"
-                style={{
-                  fontSize: "0.65rem",
-                  padding: "5px 9px",
-                }}
-              >
-                Contact
-              </a>
-            )}
-
-            {/* GitHub */}
-            {member.github && (
-              <a
-                href={member.github}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-ghost btn-sm"
-                style={{
-                  fontSize: "0.65rem",
-                  padding: "5px 9px",
-                }}
-              >
-                <ExternalLink size={10} />
-                GitHub
-              </a>
-            )}
-
-            {/* LinkedIn */}
-            {member.linkedin && (
-              <a
-                href={member.linkedin}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-ghost btn-sm"
-                style={{
-                  fontSize: "0.65rem",
-                  padding: "5px 9px",
-                }}
-              >
-                <ExternalLink size={10} />
-                LinkedIn
-              </a>
-            )}
+            <div
+              style={{
+                borderRadius: "50%",
+                background: "var(--surface)",
+                padding: 3,
+                display: "flex",
+              }}
+            >
+              <Avatar
+                name={member.name}
+                size="lg"
+                index={index}
+              />
+            </div>
           </div>
-        )}
-      </Card>
-    );
-  };
 
-  /* ===================================================
-     STATIC CARD
-  ================================================== */
-
-  const renderStaticCard = (
-    member: StaticTeamMember,
-    index: number
-  ) => {
-    return (
-      <Card
-        key={member.name}
-        hover
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          height: "auto",
-          minHeight: 0,
-          padding: "1.25rem 1.5rem",
-          borderRadius: 18,
-          textAlign: "center",
-          background: "var(--surface)",
-          border: "1px solid var(--border2)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          boxSizing: "border-box",
-          transition:
-            "transform 0.25s ease, box-shadow 0.25s ease",
-        }}
-      >
-        {/* Avatar */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: "0.6rem",
-          }}
-        >
-          <Avatar
-            name={member.name}
-            size="lg"
-            index={index}
-          />
-        </div>
-
-        {/* Name */}
-        <h3
-          style={{
-            fontSize: "1rem",
-            fontWeight: 700,
-            margin: "0 0 0.35rem",
-            color: "var(--text1)",
-            lineHeight: 1.3,
-            wordBreak: "break-word",
-          }}
-        >
-          {member.name}
-        </h3>
-
-        {/* Role */}
-        {member.role && (
-          <span
+          {/* Name */}
+          <h3
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "4px 11px",
-              borderRadius: 999,
-              background: "var(--accent-bg)",
-              color: "var(--accent2)",
-              border:
-                "1px solid var(--accent-border)",
-              fontSize: "0.67rem",
-              fontWeight: 700,
-              marginBottom: "0.6rem",
+              fontSize: "1.05rem",
+              fontWeight: 750,
+              margin: "0 0 0.45rem",
+              color: "var(--text1)",
               lineHeight: 1.3,
-              whiteSpace: "normal",
-            }}
-          >
-            {member.role}
-          </span>
-        )}
-
-        {/* Department */}
-        {member.dept && (
-          <p
-            style={{
-              fontSize: "0.72rem",
-              color: "var(--text3)",
-              lineHeight: 1.4,
-              margin: "0 0 0.6rem",
-              maxWidth: 360,
               wordBreak: "break-word",
             }}
           >
-            {member.dept}
-          </p>
-        )}
+            {member.name}
+          </h3>
 
-        {/* Full Bio */}
-        {member.bio && (
-          <p
-            style={{
-              fontSize: "0.77rem",
-              color: "var(--text2)",
-              lineHeight: 1.5,
-              margin: 0,
-              maxWidth: 360,
-              display: "block",
-              overflow: "visible",
-              whiteSpace: "normal",
-              wordBreak: "break-word",
-              overflowWrap: "break-word",
-            }}
-          >
-            {member.bio}
-          </p>
-        )}
+          {/* Role */}
+          {member.role && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "5px 12px",
+                borderRadius: 999,
+                background: "var(--accent-bg)",
+                color: "var(--accent2)",
+                border: "1px solid var(--accent-border)",
+                fontSize: "0.68rem",
+                fontWeight: 700,
+                marginBottom: "0.75rem",
+                lineHeight: 1.25,
+                textAlign: "center",
+                whiteSpace: "normal",
+              }}
+            >
+              {member.role}
+            </span>
+          )}
+
+          {/* Department + Course */}
+          {(member.department || member.course) && (
+            <p
+              style={{
+                fontSize: "0.72rem",
+                color: "var(--text3)",
+                lineHeight: 1.45,
+                margin: "0 0 0.8rem",
+                maxWidth: 320,
+                wordBreak: "break-word",
+              }}
+            >
+              {member.department}
+              {member.department && member.course && <> • </>}
+              {member.course}
+            </p>
+          )}
+
+          {/* Bio */}
+          {member.bio && (
+            <p
+              style={{
+                fontSize: "0.78rem",
+                color: "var(--text2)",
+                lineHeight: 1.6,
+                margin: "0 0 1.15rem",
+                maxWidth: 320,
+                display: "block",
+                overflow: "visible",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
+              }}
+            >
+              {member.bio}
+            </p>
+          )}
+
+          {/* Actions */}
+          {(member.email || linkedInUrl) && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "stretch",
+                gap: "0.55rem",
+                flexWrap: "wrap",
+                width: "100%",
+                marginTop: "auto",
+              }}
+            >
+              {/* Contact */}
+              {member.email && (
+                <a
+                  href={`mailto:${member.email}`}
+                  className="btn btn-primary btn-sm"
+                  style={{
+                    minWidth: 92,
+                    minHeight: 36,
+                    padding: "7px 14px",
+                    borderRadius: 10,
+                    fontSize: "0.68rem",
+                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  Contact
+                </a>
+              )}
+
+              {/* LinkedIn */}
+              {linkedInUrl && (
+                <a
+                  href={linkedInUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${member.name}'s LinkedIn profile`}
+                  className="btn btn-ghost btn-sm"
+                  style={{
+  minWidth: 108,
+  minHeight: 36,
+  padding: "7px 14px",
+  borderRadius: 10,
+  fontSize: "0.68rem",
+  fontWeight: 700,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
+  background: "#0A66C2",
+  color: "#FFFFFF",
+  border: "1px solid #0A66C2",
+}}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 17,
+                      height: 17,
+                      borderRadius: 4,
+                      background: "#0A66C2",
+                      color: "var(--surface)",
+                      fontSize: "0.6rem",
+                      fontWeight: 900,
+                      lineHeight: 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    in
+                  </span>
+                  <span>LinkedIn</span>
+                </a>
+              )}
+            </div>
+          )}
+        </div>
       </Card>
     );
   };
@@ -1179,137 +976,17 @@ export default function AboutPage() {
                 })}
             </>
           ) : (
-            /* =================================================
-               STATIC FALLBACK
-            ================================================== */
-            <>
-              {filteredStaticTeam.length ===
-              0 ? (
-                <EmptyState
-                  icon="🔍"
-                  title="No team members found"
-                  description="Try searching by name, role, department, or bio."
-                />
-              ) : (
-                filteredStaticTeam.map(
-                  (tier) => {
-                    const tierColor =
-                      getTierColor(
-                        tier.tier
-                      );
-
-                    return (
-                      <div
-                        key={tier.tier}
-                        style={{
-                          marginBottom:
-                            "4rem",
-                        }}
-                      >
-                        {/* Tier heading */}
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            alignItems:
-                              "center",
-                            gap: "1rem",
-                            width:
-                              "100%",
-                            marginBottom:
-                              "1.5rem",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display:
-                                "flex",
-                              alignItems:
-                                "center",
-                              gap: "0.7rem",
-                              flexShrink:
-                                0,
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: 9,
-                                height: 9,
-                                borderRadius:
-                                  "50%",
-                                background:
-                                  tierColor,
-                                boxShadow:
-                                  `0 0 14px ${tierColor}`,
-                              }}
-                            />
-
-                            <h3
-                              style={{
-                                margin: 0,
-                                fontSize:
-                                  "0.95rem",
-                                fontWeight:
-                                  700,
-                                textTransform:
-                                  "uppercase",
-                                letterSpacing:
-                                  "0.08em",
-                                color:
-                                  tierColor,
-                                whiteSpace:
-                                  "nowrap",
-                              }}
-                            >
-                              {tier.tier}
-                            </h3>
-                          </div>
-
-                          <div
-                            style={{
-                              flex: 1,
-                              height: 1,
-                              background:
-                                "var(--border2)",
-                              minWidth: 30,
-                            }}
-                          />
-                        </div>
-
-                        {/* Cards */}
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "center",
-                            alignItems:
-                              "flex-start",
-                            flexWrap:
-                              "wrap",
-                            gap: "1.5rem",
-                            width:
-                              "100%",
-                          }}
-                        >
-                          {tier.members.map(
-                            (
-                              member,
-                              index
-                            ) =>
-                              renderStaticCard(
-                                member,
-                                index
-                              )
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }
-                )
-              )}
-            </>
+            <EmptyState
+              icon="👥"
+              title="No team members found"
+              description={
+                teamSearch.trim()
+                  ? "Try a different search term."
+                  : "Team members will appear here once they are added from the admin panel."
+              }
+            />
           )}
+
         </div>
       </section>
 
