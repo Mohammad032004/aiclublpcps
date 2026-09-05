@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Brain, Globe, Mail } from "lucide-react";
+import { Globe, Mail } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -29,20 +30,27 @@ export default function Footer() {
                 marginBottom: "0.875rem",
               }}
             >
+              {/* Actual AI Club Logo */}
               <div
                 style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: 8,
-                  background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: 42,
+                  height: 42,
+                  position: "relative",
+                  flexShrink: 0,
                 }}
               >
-                <Brain size={16} color="white" />
+                <Image
+                  src="/ai-club-logo.png"
+                  alt="AI Club Logo"
+                  fill
+                  sizes="42px"
+                  style={{
+                    objectFit: "contain",
+                  }}
+                />
               </div>
 
+              {/* AI Club Name */}
               <span
                 style={{
                   fontFamily: "'Space Grotesk',sans-serif",
@@ -67,13 +75,14 @@ export default function Footer() {
               Lucknow.
             </p>
 
+            {/* Social Links */}
             <div style={{ display: "flex", gap: "0.5rem" }}>
               {[
                 { icon: Globe, href: "#", label: "GitHub" },
                 { icon: Globe, href: "#", label: "LinkedIn" },
                 {
                   icon: Mail,
-                  href: "mailto:aiclub@lpcps.org",
+                  href: "mailto:aiclublpcps07@gmail.com",
                   label: "Email",
                 },
               ].map((s) => (
@@ -236,3 +245,4 @@ export default function Footer() {
     </footer>
   );
 }
+
