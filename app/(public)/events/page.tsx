@@ -17,8 +17,41 @@ interface ClubEvent {
   registrationOpen: boolean;
   tags?: string[];
 }
-interface RegForm { name: string; email: string; phone: string; branch: string; year: string; teamSize: string; }
-const INIT: RegForm = { name: "", email: "", phone: "", branch: "", year: "", teamSize: "1" };
+interface TeamMember {
+  name: string;
+  email: string;
+  phone: string;
+  branch: string;
+  year: string;
+}
+
+interface RegForm {
+  name: string;
+  email: string;
+  phone: string;
+  branch: string;
+  year: string;
+  teamSize: string;
+  teamMembers: TeamMember[];
+}
+
+const INIT: RegForm = {
+  name: "",
+  email: "",
+  phone: "",
+  branch: "",
+  year: "",
+  teamSize: "1",
+  teamMembers: [],
+};
+
+const EMPTY_MEMBER: TeamMember = {
+  name: "",
+  email: "",
+  phone: "",
+  branch: "",
+  year: "",
+};
 const TYPE_GRADS: Record<string, string> = {
   workshop: "linear-gradient(135deg,#6366f1,#8b5cf6)",
   hackathon: "linear-gradient(135deg,#06b6d4,#6366f1)",
@@ -29,12 +62,51 @@ const TYPE_GRADS: Record<string, string> = {
 
 function RegModal({ event, onClose }: { event: ClubEvent; onClose: () => void }) {
   const [form, setForm] = useState<RegForm>(INIT);
-  const [errors, setErrors] = useState<Partial<RegForm>>({});
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
+  const teamSize = event.allowTeams
+    ? Math.max(1, Number(form.teamSize) || 1)
+    : 1;
+
+  const updateTeamSize = (value: string) => {
+    const size = Math.max(1, Number(value) || 1);
+
+    setForm(prev => ({
+      ...prev,
+      teamSize: value,
+      teamMembers: Array.from(
+        { length: Math.max(0, size - 1) },
+        (_, index) => prev.teamMembers[index] || { ...EMPTY_MEMBER }
+      ),
+    }));
+
+    setErrors(prev => ({ ...prev, teamSize: undefined }));
+  };
+
+  const updateTeamMember = (
+    index: number,
+    field: keyof TeamMember,
+    value: string
+  ) => {
+    setForm(prev => ({
+      ...prev,
+      teamMembers: prev.teamMembers.map((member, memberIndex) =>
+        memberIndex === index
+          ? { ...member, [field]: value }
+          : member
+      ),
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      [`teamMember_${index}_${field}`]: undefined,
+    }));
+  };
+
   const validate = () => {
-    const e: Partial<RegForm> = {};
+    const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = "Full name is required";
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^@]+@[^@]+\.[^@]+$/.test(form.email)) e.email = "Enter a valid email";
@@ -42,7 +114,21 @@ function RegModal({ event, onClose }: { event: ClubEvent; onClose: () => void })
     if (!form.branch.trim()) e.branch = "Branch is required";
     if (!form.year) e.year = "Please select your year";
     if (event.allowTeams && (!form.teamSize || Number(form.teamSize) < 1)) e.teamSize = "Please select team size";
-    if (event.allowTeams && event.maxTeamSize && Number(form.teamSize) > event.maxTeamSize) e.teamSize = `Maximum ${event.maxTeamSize} members allowed`;
+    if (event.allowTeams && event.maxTeamSize && Number(form.teamSize) > event.maxTeamSize) {
+      e.teamSize = `Maximum ${event.maxTeamSize} members allowed`;
+    }
+
+    if (event.allowTeams && teamSize > 1) {
+      for (let i = 0; i < teamSize - 1; i++) {
+        const member = form.teamMembers[i] || EMPTY_MEMBER;
+        if (!member.name.trim()) e[`teamMember_${i}_name`] = `Member ${i + 2} name is required`;
+        if (!member.email.trim()) e[`teamMember_${i}_email`] = `Member ${i + 2} email is required`;
+        else if (!/^[^@]+@[^@]+\.[^@]+$/.test(member.email)) e[`teamMember_${i}_email`] = `Enter a valid email for Member ${i + 2}`;
+        if (!member.phone.trim()) e[`teamMember_${i}_phone`] = `Member ${i + 2} phone is required`;
+        if (!member.branch.trim()) e[`teamMember_${i}_branch`] = `Member ${i + 2} branch is required`;
+        if (!member.year) e[`teamMember_${i}_year`] = `Select Member ${i + 2} year`;
+      }
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -54,7 +140,24 @@ function RegModal({ event, onClose }: { event: ClubEvent; onClose: () => void })
       const response = await fetch("/api/event-registrations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: event._id, ...form, teamSize: event.allowTeams ? Number(form.teamSize) : undefined }),
+        body: JSON.stringify({
+          eventId: event._id,
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          branch: form.branch,
+          year: form.year,
+          teamSize: event.allowTeams ? Number(form.teamSize) : 1,
+          teamMembers: event.allowTeams
+            ? form.teamMembers.slice(0, teamSize - 1).map((member) => ({
+                name: member.name.trim(),
+                email: member.email.trim(),
+                phone: member.phone.trim(),
+                branch: member.branch.trim(),
+                year: member.year,
+              }))
+            : [],
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data?.error || data?.message || "Registration failed");
@@ -111,8 +214,7 @@ function RegModal({ event, onClose }: { event: ClubEvent; onClose: () => void })
             className={`input ${errors.teamSize ? "error" : ""}`}
             value={form.teamSize}
             onChange={e => {
-              setForm(p => ({ ...p, teamSize: e.target.value }));
-              setErrors(p => ({ ...p, teamSize: undefined }));
+              updateTeamSize(e.target.value);
             }}
           >
             {Array.from({ length: Math.max(1, event.maxTeamSize || 4) }, (_, i) => i + 1).map(size => (
@@ -126,6 +228,118 @@ function RegModal({ event, onClose }: { event: ClubEvent; onClose: () => void })
           </p>
         </FormField>
       )}
+      {event.allowTeams && teamSize > 1 && (
+        <div
+          style={{
+            marginTop: "1rem",
+            marginBottom: "1rem",
+            padding: "1rem",
+            border: "1px solid var(--border2)",
+            borderRadius: "var(--radius)",
+            background: "var(--bg2)",
+          }}
+        >
+          <div style={{ marginBottom: "1rem" }}>
+            <h4 style={{ fontSize: "0.95rem", fontWeight: 700 }}>
+              Team Member Details
+            </h4>
+            <p style={{ fontSize: "0.75rem", color: "var(--text3)", marginTop: "0.25rem" }}>
+              Enter details for the other {teamSize - 1} member{teamSize - 1 === 1 ? "" : "s"}. The first person is the team leader.
+            </p>
+          </div>
+
+          {form.teamMembers.slice(0, teamSize - 1).map((member, index) => {
+            const memberNumber = index + 2;
+            const fieldError = (field: keyof TeamMember): string | undefined =>
+              errors[`teamMember_${index}_${field}`];
+
+            return (
+              <div
+                key={index}
+                style={{
+                  marginBottom: index === teamSize - 2 ? 0 : "1.25rem",
+                  padding: "1rem",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-sm)",
+                  background: "var(--surface)",
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "0.82rem",
+                    marginBottom: "0.9rem",
+                    color: "var(--accent2)",
+                  }}
+                >
+                  Member {memberNumber}
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "0 1rem",
+                  }}
+                >
+                  <FormField label="Full Name" required error={fieldError("name") as string | undefined}>
+                    <input
+                      className={`input ${fieldError("name") ? "error" : ""}`}
+                      value={member.name}
+                      onChange={e => updateTeamMember(index, "name", e.target.value)}
+                      placeholder="Member full name"
+                    />
+                  </FormField>
+
+                  <FormField label="Email Address" required error={fieldError("email") as string | undefined}>
+                    <input
+                      type="email"
+                      className={`input ${fieldError("email") ? "error" : ""}`}
+                      value={member.email}
+                      onChange={e => updateTeamMember(index, "email", e.target.value)}
+                      placeholder="member@college.edu.in"
+                    />
+                  </FormField>
+
+                  <FormField label="Phone Number" required error={fieldError("phone") as string | undefined}>
+                    <input
+                      type="tel"
+                      className={`input ${fieldError("phone") ? "error" : ""}`}
+                      value={member.phone}
+                      onChange={e => updateTeamMember(index, "phone", e.target.value)}
+                      placeholder="+91 98765 43210"
+                    />
+                  </FormField>
+
+                  <FormField label="Branch / Program" required error={fieldError("branch") as string | undefined}>
+                    <input
+                      className={`input ${fieldError("branch") ? "error" : ""}`}
+                      value={member.branch}
+                      onChange={e => updateTeamMember(index, "branch", e.target.value)}
+                      placeholder="B.Tech CSE"
+                    />
+                  </FormField>
+                </div>
+
+                <FormField label="Current Year" required error={fieldError("year") as string | undefined}>
+                  <select
+                    className={`input ${fieldError("year") ? "error" : ""}`}
+                    value={member.year}
+                    onChange={e => updateTeamMember(index, "year", e.target.value)}
+                  >
+                    <option value="">Select member year</option>
+                    <option>1st Year</option>
+                    <option>2nd Year</option>
+                    <option>3rd Year</option>
+                    <option>4th Year</option>
+                  </select>
+                </FormField>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div style={{ marginTop: "0.5rem" }}>
         <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={submit} disabled={loading}>
           {loading ? <><Spinner size="sm"/> Registering…</> : <>Confirm Registration <ArrowRight size={14}/></>}

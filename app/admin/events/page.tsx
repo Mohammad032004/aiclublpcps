@@ -831,6 +831,17 @@ function RegistrationDetails({
               member.phone || "",
               member.branch || "",
               member.year || "",
+              String(
+                (member as Record<string, unknown>).course ??
+                (member as Record<string, unknown>).program ??
+                (member as Record<string, unknown>).courseName ??
+                ""
+              ),
+              String(
+                (member as Record<string, unknown>).currentYear ??
+                (member as Record<string, unknown>).current_year ??
+                ""
+              ),
             ]
           ),
         ]
@@ -1469,6 +1480,54 @@ function RegistrationDetails({
                                     }
                                   </div>
                                 )}
+
+                                {(() => {
+                                  const memberData =
+                                    member as Record<string, unknown>;
+
+                                  // Support branch/course naming used by different
+                                  // versions of the registration form/API.
+                                  const memberCourse =
+                                    memberData.branch ??
+                                    memberData.course ??
+                                    memberData.program ??
+                                    memberData["courseName"] ??
+                                    "";
+
+                                  const memberYear =
+                                    memberData.year ??
+                                    memberData.currentYear ??
+                                    memberData["current_year"] ??
+                                    "";
+
+                                  return (
+                                    <>
+                                      {String(memberCourse || "").trim() && (
+                                        <div
+                                          style={{
+                                            color: "var(--text3)",
+                                            fontSize: "0.68rem",
+                                            marginTop: "0.1rem",
+                                          }}
+                                        >
+                                          Course: {String(memberCourse)}
+                                        </div>
+                                      )}
+
+                                      {String(memberYear || "").trim() && (
+                                        <div
+                                          style={{
+                                            color: "var(--text3)",
+                                            fontSize: "0.68rem",
+                                            marginTop: "0.1rem",
+                                          }}
+                                        >
+                                          Year: {String(memberYear)}
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </div>
                             )
                           )}

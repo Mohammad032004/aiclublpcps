@@ -14,39 +14,84 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
+    // Basic validation
     if (!body.eventId) {
       return NextResponse.json(
-        { error: "eventId is required" },
+        {
+          success: false,
+          error: "eventId is required",
+        },
         { status: 400 }
       );
     }
 
     if (!body.name) {
       return NextResponse.json(
-        { error: "name is required" },
+        {
+          success: false,
+          error: "name is required",
+        },
         { status: 400 }
       );
     }
 
     if (!body.email) {
       return NextResponse.json(
-        { error: "email is required" },
+        {
+          success: false,
+          error: "email is required",
+        },
         { status: 400 }
       );
     }
 
-    /*
-     * Save the complete registration.
+    /**
+     * Normalize team members.
      *
-     * This supports:
-     * - Individual registrations
-     * - Team registrations
-     * - teamName
-     * - teamMembers
-     * - formData
-     * - extraFields
+     * IMPORTANT:
+     * branch and year are explicitly preserved here.
      */
-    const registration = new EventRegistration(body);
+    const teamMembers = Array.isArray(body.teamMembers)
+      ? body.teamMembers.map((member: Record<string, unknown>) => ({
+          name:
+            typeof member.name === "string"
+              ? member.name.trim()
+              : "",
+
+          email:
+            typeof member.email === "string"
+              ? member.email.trim()
+              : "",
+
+          phone:
+            typeof member.phone === "string"
+              ? member.phone.trim()
+              : "",
+
+          branch:
+            typeof member.branch === "string"
+              ? member.branch.trim()
+              : "",
+
+          year:
+            typeof member.year === "string"
+              ? member.year.trim()
+              : "",
+        }))
+      : [];
+
+    /**
+     * Create the registration.
+     *
+     * Preserve the other registration fields while
+     * explicitly setting teamMembers.
+     */
+    const registrationData = {
+      ...body,
+      teamMembers,
+    };
+
+    const registration = new EventRegistration(registrationData);
 
     await registration.save();
 
@@ -59,7 +104,10 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err: unknown) {
-    console.error("POST /api/event-registrations error:", err);
+    console.error(
+      "POST /api/event-registrations error:",
+      err
+    );
 
     return NextResponse.json(
       {
@@ -87,7 +135,6 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
-
     const eventId = searchParams.get("eventId");
 
     if (!eventId) {
@@ -116,7 +163,10 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   } catch (err: unknown) {
-    console.error("GET /api/event-registrations error:", err);
+    console.error(
+      "GET /api/event-registrations error:",
+      err
+    );
 
     return NextResponse.json(
       {
