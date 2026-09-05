@@ -102,6 +102,7 @@ export default function ApplyPage() {
       if (!form.email.trim()) e.email = "Required";
       else if (!/^[^@]+@[^@]+\.[^@]+$/.test(form.email)) e.email = "Valid email required";
       if (!form.phone.trim()) e.phone = "Required";
+      else if (!/^\d{10}$/.test(form.phone)) e.phone = "Phone number must be exactly 10 digits";
     }
     if (step === 1) {
   if (!form.branch.trim()) e.branch = "Required";
@@ -150,7 +151,21 @@ export default function ApplyPage() {
   );
 
   const inp = (k: keyof F, ph: string, t = "text") => (
-    <input type={t} className={`input ${errors[k] ? "error" : ""}`} value={form[k] as string} onChange={e => up(k, e.target.value)} placeholder={ph}/>
+    <input
+      type={t}
+      className={`input ${errors[k] ? "error" : ""}`}
+      value={form[k] as string}
+      onChange={e => {
+        const value =
+          k === "phone"
+            ? e.target.value.replace(/\D/g, "").slice(0, 10)
+            : e.target.value;
+        up(k, value);
+      }}
+      placeholder={ph}
+      inputMode={k === "phone" ? "numeric" : undefined}
+      maxLength={k === "phone" ? 10 : undefined}
+    />
   );
 
   return (
