@@ -1,39 +1,85 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 
-// Proxy always runs on the Node.js runtime in Next.js 16, so the
-// crypto-based session helper (lib/session.ts) works here without
-// any extra runtime config.
+import {
+  verifySessionToken,
+  SESSION_COOKIE,
+} from "@/lib/session";
+
+// ─────────────────────────────────────────────
+// Next.js 16 Proxy
+// ─────────────────────────────────────────────
+
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const session = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
 
+  // Get the current session from the session cookie.
+  const session = verifySessionToken(
+    req.cookies.get(SESSION_COOKIE)?.value
+  );
+
+  // Check whether the request is for the admin panel.
   const isAdminRoute = pathname.startsWith("/admin");
-  // "/admin/login" is a legacy alias for "/login" (see app/admin/login/page.tsx);
-  // treat both the same way here so it never falls through to a 404 and an
-  // already-authenticated visitor skips straight to the dashboard.
-  const isLoginRoute = pathname === "/login" || pathname === "/admin/login";
 
-  // Not logged in and trying to reach the admin panel -> send to /login
-  if (isAdminRoute && !session && !isLoginRoute) {
+  // /admin/login is kept as a legacy alias for /login.
+  const isLoginRoute =
+    pathname === "/login" ||
+    pathname === "/admin/login";
+
+  // ─────────────────────────────────────────
+  // Protect Admin Routes
+  // ─────────────────────────────────────────
+
+  // If the user is not logged in and tries to access
+  // any /admin route, redirect them to /login.
+  //
+  // /admin/login is excluded because it is treated
+  // as a login route.
+  if (
+    isAdminRoute &&
+    !session &&
+    !isLoginRoute
+  ) {
     const url = req.nextUrl.clone();
+
     url.pathname = "/login";
     url.search = "";
+
+    // Remember the page they originally wanted.
     url.searchParams.set("next", pathname);
+
     return NextResponse.redirect(url);
   }
 
-  // Already logged in and visiting /login (or its /admin/login alias) -> skip straight to the dashboard
+  // ─────────────────────────────────────────
+  // Logged-in User Visiting Login
+  // ─────────────────────────────────────────
+
+  // If the user is already logged in and visits
+  // /login or /admin/login, send them directly
+  // to the admin dashboard.
   if (isLoginRoute && session) {
     const url = req.nextUrl.clone();
+
     url.pathname = "/admin/dashboard";
     url.search = "";
+
     return NextResponse.redirect(url);
   }
+
+  // ─────────────────────────────────────────
+  // Continue Request
+  // ─────────────────────────────────────────
 
   return NextResponse.next();
 }
 
+// ─────────────────────────────────────────────
+// Routes handled by Proxy
+// ─────────────────────────────────────────────
+
 export const config = {
-  matcher: ["/admin/:path*", "/login"],
+  matcher: [
+    "/admin/:path*",
+    "/login",
+  ],
 };

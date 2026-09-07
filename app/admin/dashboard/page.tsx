@@ -51,7 +51,7 @@ export default function Dashboard() {
   };
 
   const statCards = [
-    { label:"Members", value:stats.members, icon:Users, color:"var(--accent)", bg:"var(--accent-bg)", href:"/admin/members" },
+    { label:"Members", value:stats.members, icon:Users, color:"var(--accent)", bg:"var(--accent-bg)", href:"/admin/settings" },
     { label:"Applications", value:stats.totalApps, sub:`${stats.pendingApps} pending`, icon:ClipboardList, color:"var(--orange)", bg:"var(--orange-bg)", href:"/admin/applications" },
     { label:"Upcoming Events", value:stats.events, icon:Calendar, color:"var(--green)", bg:"var(--green-bg)", href:"/admin/events" },
     { label:"Projects", value:stats.projects, icon:FlaskConical, color:"var(--purple)", bg:"var(--purple-bg)", href:"/admin/projects" },

@@ -2,12 +2,14 @@ import mongoose, { Schema, model, models } from "mongoose";
 
 // ─────────────────────────────────────────────
 // User
+// Admin Panel Login Users
 // ─────────────────────────────────────────────
 
 const UserSchema = new Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
   },
 
   email: {
@@ -23,10 +25,76 @@ const UserSchema = new Schema({
     required: true,
   },
 
+  // ─────────────────────────────────────────
+  // Admin Panel Role
+  // ─────────────────────────────────────────
+
   role: {
     type: String,
-    enum: ["admin", "core", "member"],
+    enum: ["admin", "faculty", "core", "member"],
     default: "member",
+  },
+
+  // ─────────────────────────────────────────
+  // Faculty Position
+  // Only applicable when role = faculty
+  // ─────────────────────────────────────────
+
+  facultyPosition: {
+    type: String,
+    enum: ["faculty_head", "club_instructor", null],
+    default: null,
+  },
+
+  // ─────────────────────────────────────────
+  // Individual Permissions
+  // ─────────────────────────────────────────
+
+  permissions: {
+    dashboard: {
+      type: Boolean,
+      default: true,
+    },
+
+    applications: {
+      type: Boolean,
+      default: false,
+    },
+
+    announcements: {
+      type: Boolean,
+      default: false,
+    },
+
+    events: {
+      type: Boolean,
+      default: false,
+    },
+
+    projects: {
+      type: Boolean,
+      default: false,
+    },
+
+    resources: {
+      type: Boolean,
+      default: false,
+    },
+
+    messages: {
+      type: Boolean,
+      default: false,
+    },
+
+    team: {
+      type: Boolean,
+      default: false,
+    },
+
+    settings: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   createdAt: {
@@ -56,7 +124,9 @@ const MemberSchema = new Schema({
   },
 
   phone: String,
+
   branch: String,
+
   year: String,
 
   role: {
@@ -72,6 +142,7 @@ const MemberSchema = new Schema({
   },
 
   github: String,
+
   linkedin: String,
 
   joinedAt: {
@@ -80,7 +151,9 @@ const MemberSchema = new Schema({
   },
 
   bio: String,
+
   skills: [String],
+
   domains: [String],
 
   showOnAbout: {
@@ -115,11 +188,17 @@ const TeamMemberSchema = new Schema({
   },
 
   department: String,
+
   course: String,
+
   bio: String,
+
   email: String,
+
   github: String,
+
   linkedin: String,
+
   photo: String,
 
   visible: {
@@ -158,20 +237,35 @@ const ApplicationSchema = new Schema({
   },
 
   phone: String,
+
   gender: String,
+
   github: String,
+
   linkedin: String,
+
   college: String,
+
   branch: String,
+
   year: String,
+
   cgpa: Number,
+
   certifications: String,
+
   skills: [String],
+
   domains: [String],
+
   experience: String,
+
   projectDesc: String,
+
   whyJoin: String,
+
   contribution: String,
+
   goals: String,
 
   status: {
@@ -186,6 +280,7 @@ const ApplicationSchema = new Schema({
   },
 
   reviewedAt: Date,
+
   reviewNote: String,
 });
 
@@ -216,8 +311,11 @@ const EventSchema = new Schema({
   },
 
   description: String,
+
   date: Date,
+
   location: String,
+
   maxAttendees: Number,
 
   status: {
@@ -280,7 +378,9 @@ const EventRegistrationSchema = new Schema({
     required: true,
   },
 
-  // ───────── Team Leader / Main Registrant ─────────
+  // ─────────────────────────────────────────
+  // Team Leader / Main Registrant
+  // ─────────────────────────────────────────
 
   name: {
     type: String,
@@ -315,7 +415,9 @@ const EventRegistrationSchema = new Schema({
     trim: true,
   },
 
-  // ───────── Other Team Members ─────────
+  // ─────────────────────────────────────────
+  // Other Team Members
+  // ─────────────────────────────────────────
 
   teamMembers: [
     {
@@ -384,9 +486,13 @@ const ProjectSchema = new Schema({
   },
 
   tags: [String],
+
   github: String,
+
   liveDemo: String,
+
   builtBy: [String],
+
   year: Number,
 
   featured: {
@@ -448,6 +554,7 @@ const ResourceSchema = new Schema({
   },
 
   url: String,
+
   fileSize: String,
 
   access: {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+
 import {
   LayoutDashboard,
   ClipboardList,
@@ -17,21 +18,166 @@ import {
   ChevronLeft,
   UserCog,
   Megaphone,
+  Shield,
 } from "lucide-react";
 
-import { ThemeToggle, ToastContainer, Avatar } from "@/components/ui";
+import {
+  ThemeToggle,
+  ToastContainer,
+  Avatar,
+} from "@/components/ui";
 
-const NAV = [
-  { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/admin/applications", icon: ClipboardList, label: "Applications" },
-  { href: "/admin/announcements", icon: Megaphone, label: "Announcements" },
-  { href: "/admin/events", icon: Calendar, label: "Events" },
-  { href: "/admin/projects", icon: FlaskConical, label: "Projects" },
-  { href: "/admin/resources", icon: BookOpen, label: "Resources" },
-  { href: "/admin/messages", icon: MessageSquare, label: "Messages" },
-  { href: "/admin/team", icon: UserCog, label: "Team" },
-  { href: "/admin/settings", icon: Settings, label: "Settings" },
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+
+type PermissionKey =
+  | "dashboard"
+  | "applications"
+  | "announcements"
+  | "events"
+  | "projects"
+  | "resources"
+  | "messages"
+  | "team"
+  | "settings";
+
+type Permissions = Record<PermissionKey, boolean>;
+
+type CurrentUser = {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  facultyPosition?: string | null;
+  permissions?: Partial<Permissions>;
+};
+
+// ─────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────
+
+const NAV: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  permission: PermissionKey;
+}[] = [
+  {
+    href: "/admin/dashboard",
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    permission: "dashboard",
+  },
+
+  {
+    href: "/admin/applications",
+    icon: ClipboardList,
+    label: "Applications",
+    permission: "applications",
+  },
+
+  {
+    href: "/admin/announcements",
+    icon: Megaphone,
+    label: "Announcements",
+    permission: "announcements",
+  },
+
+  {
+    href: "/admin/events",
+    icon: Calendar,
+    label: "Events",
+    permission: "events",
+  },
+
+  {
+    href: "/admin/projects",
+    icon: FlaskConical,
+    label: "Projects",
+    permission: "projects",
+  },
+
+  {
+    href: "/admin/resources",
+    icon: BookOpen,
+    label: "Resources",
+    permission: "resources",
+  },
+
+  {
+    href: "/admin/messages",
+    icon: MessageSquare,
+    label: "Messages",
+    permission: "messages",
+  },
+
+  {
+    href: "/admin/team",
+    icon: UserCog,
+    label: "Team",
+    permission: "team",
+  },
+
+  {
+    href: "/admin/settings",
+    icon: Settings,
+    label: "Settings",
+    permission: "settings",
+  },
 ];
+
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+
+function getRoleLabel(user: CurrentUser) {
+  if (user.role === "admin") {
+    return "Admin";
+  }
+
+  if (user.role === "faculty") {
+    if (user.facultyPosition === "faculty_head") {
+      return "Faculty Head";
+    }
+
+    if (user.facultyPosition === "club_instructor") {
+      return "Club Instructor";
+    }
+
+    return "Faculty";
+  }
+
+  if (user.role === "core") {
+    return "Core Member";
+  }
+
+  return "Member";
+}
+
+// ─────────────────────────────────────────────
+// Default Permissions
+// ─────────────────────────────────────────────
+
+function getDefaultPermissions(
+  userPermissions?: Partial<Permissions>
+): Permissions {
+  return {
+    dashboard: userPermissions?.dashboard ?? true,
+    applications: userPermissions?.applications ?? false,
+    announcements: userPermissions?.announcements ?? false,
+    events: userPermissions?.events ?? false,
+    projects: userPermissions?.projects ?? false,
+    resources: userPermissions?.resources ?? false,
+    messages: userPermissions?.messages ?? false,
+    team: userPermissions?.team ?? false,
+    settings: userPermissions?.settings ?? false,
+  };
+}
+
+// ─────────────────────────────────────────────
+// Admin Layout
+// ─────────────────────────────────────────────
 
 export default function AdminLayout({
   children,
@@ -43,27 +189,207 @@ export default function AdminLayout({
 
   const [collapsed, setCollapsed] = useState(false);
 
-  if (pathname === "/login" || pathname?.includes("/login")) {
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  // ─────────────────────────────────────────
+  // Load current logged-in user
+  // ─────────────────────────────────────────
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/admin/session", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load session");
+        }
+
+        const data = await response.json();
+
+        if (!mounted) return;
+
+        const sessionUser = data?.user as
+          | CurrentUser
+          | undefined;
+
+        if (!sessionUser) {
+          router.replace("/login");
+          return;
+        }
+
+        setUser(sessionUser);
+      } catch {
+        if (mounted) {
+          router.replace("/login");
+        }
+      } finally {
+        if (mounted) {
+          setLoadingUser(false);
+        }
+      }
+    };
+
+    loadSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
+  // ─────────────────────────────────────────
+  // Login page
+  // ─────────────────────────────────────────
+
+  if (
+    pathname === "/login" ||
+    pathname?.includes("/login")
+  ) {
     return <>{children}</>;
   }
 
+  // ─────────────────────────────────────────
+  // Loading
+  // ─────────────────────────────────────────
+
+  if (loadingUser) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--surface)",
+          color: "var(--text2)",
+        }}
+      >
+        <div
+          style={{
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              border: "3px solid var(--border2)",
+              borderTopColor: "var(--accent)",
+              borderRadius: "50%",
+              animation:
+                "admin-loading-spin 0.8s linear infinite",
+              margin: "0 auto 0.75rem",
+            }}
+          />
+
+          <div
+            style={{
+              fontSize: "0.82rem",
+            }}
+          >
+            Loading admin panel…
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes admin-loading-spin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────
+  // No user
+  // ─────────────────────────────────────────
+
+  if (!user) {
+    return null;
+  }
+
+  // ─────────────────────────────────────────
+  // Determine permissions
+  // ─────────────────────────────────────────
+
+  const permissions: Permissions =
+    getDefaultPermissions(user.permissions);
+
+  const isAdmin = user.role === "admin";
+
+  // ─────────────────────────────────────────
+  // Filter navigation based on permissions
+  // ─────────────────────────────────────────
+
+  const visibleNav = NAV.filter(
+    (item) =>
+      isAdmin ||
+      permissions[item.permission] === true
+  );
+
+  // ─────────────────────────────────────────
+  // Logout
+  // ─────────────────────────────────────────
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
+  };
+
+  // ─────────────────────────────────────────
+  // Current page
+  // ─────────────────────────────────────────
+
+  const currentPage =
+    NAV.find((item) =>
+      pathname?.startsWith(item.href)
+    )?.label || "Admin Panel";
+
+  // ─────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────
+
   return (
     <div className="admin-wrap">
-      {/* Sidebar */}
-      <aside className={`admin-sidebar ${collapsed ? "collapsed" : ""}`}>
+
+      {/* ═══════════════════════════════════════
+          SIDEBAR
+      ═══════════════════════════════════════ */}
+
+      <aside
+        className={`admin-sidebar ${
+          collapsed ? "collapsed" : ""
+        }`}
+      >
         {/* Logo */}
+
         <div
           style={{
             height: 60,
             display: "flex",
             alignItems: "center",
-            padding: collapsed ? "0 1rem" : "0 1.25rem",
-            borderBottom: "1px solid var(--border2)",
+            padding: collapsed
+              ? "0 1rem"
+              : "0 1.25rem",
+            borderBottom:
+              "1px solid var(--border2)",
             gap: "0.65rem",
             flexShrink: 0,
           }}
         >
-          {/* AI Club Logo */}
           <div
             style={{
               width: 32,
@@ -90,7 +416,8 @@ export default function AdminLayout({
           {!collapsed && (
             <span
               style={{
-                fontFamily: "'Space Grotesk',sans-serif",
+                fontFamily:
+                  "'Space Grotesk',sans-serif",
                 fontWeight: 700,
                 fontSize: "1.05rem",
                 color: "var(--text1)",
@@ -102,7 +429,8 @@ export default function AdminLayout({
           )}
         </div>
 
-        {/* Nav */}
+        {/* Navigation */}
+
         <nav
           style={{
             flex: 1,
@@ -110,71 +438,106 @@ export default function AdminLayout({
             overflowY: "auto",
           }}
         >
-          {NAV.map((item) => {
+          {visibleNav.map((item) => {
             const active =
               pathname === item.href ||
-              pathname?.startsWith(item.href + "/");
+              pathname?.startsWith(
+                item.href + "/"
+              );
+
+            const Icon = item.icon;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`sidebar-link ${active ? "active" : ""}`}
-                title={collapsed ? item.label : undefined}
+                className={`sidebar-link ${
+                  active ? "active" : ""
+                }`}
+                title={
+                  collapsed
+                    ? item.label
+                    : undefined
+                }
               >
-                <item.icon size={17} className="icon" />
+                <Icon
+                  size={17}
+                  className="icon"
+                />
 
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && (
+                  <span>{item.label}</span>
+                )}
               </Link>
             );
           })}
         </nav>
 
         {/* Bottom */}
+
         <div
           style={{
-            borderTop: "1px solid var(--border2)",
+            borderTop:
+              "1px solid var(--border2)",
             padding: "0.5rem",
           }}
         >
           <button
-            onClick={async () => {
-              await fetch("/api/auth/logout", {
-                method: "POST",
-              });
-
-              router.push("/login");
-              router.refresh();
-            }}
+            onClick={handleLogout}
             className="sidebar-link"
             style={{
               width: "100%",
               background: "none",
               border: "none",
               cursor: "pointer",
-              justifyContent: collapsed ? "center" : "flex-start",
+              justifyContent: collapsed
+                ? "center"
+                : "flex-start",
             }}
-            title={collapsed ? "Logout" : undefined}
+            title={
+              collapsed
+                ? "Logout"
+                : undefined
+            }
           >
-            <LogOut size={17} className="icon" />
+            <LogOut
+              size={17}
+              className="icon"
+            />
 
-            {!collapsed && <span>Logout</span>}
+            {!collapsed && (
+              <span>Logout</span>
+            )}
           </button>
         </div>
       </aside>
 
-      {/* Main */}
-      <div className={`admin-main ${collapsed ? "collapsed" : ""}`}>
+      {/* ═══════════════════════════════════════
+          MAIN
+      ═══════════════════════════════════════ */}
+
+      <div
+        className={`admin-main ${
+          collapsed ? "collapsed" : ""
+        }`}
+      >
         {/* Topbar */}
+
         <header className="admin-topbar">
           <button
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() =>
+              setCollapsed(!collapsed)
+            }
             className="btn btn-ghost btn-icon"
             style={{
               color: "var(--text2)",
             }}
           >
-            {collapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
+            {collapsed ? (
+              <Menu size={18} />
+            ) : (
+              <ChevronLeft size={18} />
+            )}
           </button>
 
           <div
@@ -185,14 +548,14 @@ export default function AdminLayout({
           >
             <span
               style={{
-                fontFamily: "'Space Grotesk',sans-serif",
+                fontFamily:
+                  "'Space Grotesk',sans-serif",
                 fontWeight: 600,
                 fontSize: "0.85rem",
                 color: "var(--text2)",
               }}
             >
-              {NAV.find((n) => pathname?.startsWith(n.href))?.label ||
-                "Admin Panel"}
+              {currentPage}
             </span>
           </div>
 
@@ -223,10 +586,13 @@ export default function AdminLayout({
                   height: 7,
                   background: "var(--red)",
                   borderRadius: "50%",
-                  border: "2px solid var(--surface)",
+                  border:
+                    "2px solid var(--surface)",
                 }}
               />
             </button>
+
+            {/* User */}
 
             <div
               style={{
@@ -234,31 +600,43 @@ export default function AdminLayout({
                 alignItems: "center",
                 gap: "0.6rem",
                 paddingLeft: "0.5rem",
-                borderLeft: "1px solid var(--border2)",
+                borderLeft:
+                  "1px solid var(--border2)",
                 marginLeft: "0.25rem",
               }}
             >
-              <Avatar name="Admin" size="sm" index={0} />
+              <Avatar
+                name={user.name || "Admin"}
+                size="sm"
+                index={0}
+              />
 
               <div>
                 <div
                   style={{
-                    fontFamily: "'Space Grotesk',sans-serif",
+                    fontFamily:
+                      "'Space Grotesk',sans-serif",
                     fontWeight: 700,
                     fontSize: "0.8rem",
                   }}
                 >
-                  Admin
+                  {user.name || "Admin"}
                 </div>
 
                 <div
                   style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
                     fontSize: "0.68rem",
                     color: "var(--text3)",
-                    fontFamily: "'JetBrains Mono',monospace",
+                    fontFamily:
+                      "'JetBrains Mono',monospace",
                   }}
                 >
-                  admin@aiclub.in
+                  <Shield size={10} />
+
+                  {getRoleLabel(user)}
                 </div>
               </div>
             </div>
@@ -266,7 +644,10 @@ export default function AdminLayout({
         </header>
 
         {/* Content */}
-        <div className="admin-content">{children}</div>
+
+        <div className="admin-content">
+          {children}
+        </div>
       </div>
 
       <ToastContainer />
