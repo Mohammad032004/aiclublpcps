@@ -56,9 +56,7 @@ const MemberSchema = new Schema({
   },
 
   phone: String,
-
   branch: String,
-
   year: String,
 
   role: {
@@ -74,7 +72,6 @@ const MemberSchema = new Schema({
   },
 
   github: String,
-
   linkedin: String,
 
   joinedAt: {
@@ -83,9 +80,7 @@ const MemberSchema = new Schema({
   },
 
   bio: String,
-
   skills: [String],
-
   domains: [String],
 
   showOnAbout: {
@@ -120,17 +115,11 @@ const TeamMemberSchema = new Schema({
   },
 
   department: String,
-
   course: String,
-
   bio: String,
-
   email: String,
-
   github: String,
-
   linkedin: String,
-
   photo: String,
 
   visible: {
@@ -169,35 +158,20 @@ const ApplicationSchema = new Schema({
   },
 
   phone: String,
-
   gender: String,
-
   github: String,
-
   linkedin: String,
-
   college: String,
-
   branch: String,
-
   year: String,
-
   cgpa: Number,
-
   certifications: String,
-
   skills: [String],
-
   domains: [String],
-
   experience: String,
-
   projectDesc: String,
-
   whyJoin: String,
-
   contribution: String,
-
   goals: String,
 
   status: {
@@ -212,7 +186,6 @@ const ApplicationSchema = new Schema({
   },
 
   reviewedAt: Date,
-
   reviewNote: String,
 });
 
@@ -243,11 +216,8 @@ const EventSchema = new Schema({
   },
 
   description: String,
-
   date: Date,
-
   location: String,
-
   maxAttendees: Number,
 
   status: {
@@ -414,13 +384,9 @@ const ProjectSchema = new Schema({
   },
 
   tags: [String],
-
   github: String,
-
   liveDemo: String,
-
   builtBy: [String],
-
   year: Number,
 
   featured: {
@@ -482,7 +448,6 @@ const ResourceSchema = new Schema({
   },
 
   url: String,
-
   fileSize: String,
 
   access: {
@@ -544,3 +509,64 @@ const MessageSchema = new Schema({
 
 export const Message =
   models.Message || model("Message", MessageSchema);
+
+
+// ─────────────────────────────────────────────
+// Announcement
+// ─────────────────────────────────────────────
+
+const AnnouncementSchema = new Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  description: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  badge: {
+    type: String,
+    default: "Announcement",
+    trim: true,
+  },
+
+  buttonText: {
+    type: String,
+    default: "Learn More",
+    trim: true,
+  },
+
+  buttonLink: {
+    type: String,
+    default: "/",
+    trim: true,
+  },
+
+  active: {
+    type: Boolean,
+    default: true,
+  },
+
+  showPopup: {
+    type: Boolean,
+    default: true,
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+export const Announcement =
+  models.Announcement ||
+  model("Announcement", AnnouncementSchema);

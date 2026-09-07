@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  Users,
   ClipboardList,
   Calendar,
   FlaskConical,
@@ -17,6 +16,7 @@ import {
   Bell,
   ChevronLeft,
   UserCog,
+  Megaphone,
 } from "lucide-react";
 
 import { ThemeToggle, ToastContainer, Avatar } from "@/components/ui";
@@ -24,7 +24,7 @@ import { ThemeToggle, ToastContainer, Avatar } from "@/components/ui";
 const NAV = [
   { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/applications", icon: ClipboardList, label: "Applications" },
-  { href: "/admin/members", icon: Users, label: "Members" },
+  { href: "/admin/announcements", icon: Megaphone, label: "Announcements" },
   { href: "/admin/events", icon: Calendar, label: "Events" },
   { href: "/admin/projects", icon: FlaskConical, label: "Projects" },
   { href: "/admin/resources", icon: BookOpen, label: "Resources" },

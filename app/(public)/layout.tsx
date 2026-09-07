@@ -1,7 +1,7 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { ToastContainer } from "@/components/ui";
-import ApplicationPopup from "@/components/ApplicationPopup";
+import AnnouncementPopup from "@/components/AnnouncementPopup";
 
 export default function PublicLayout({
   children,
@@ -20,7 +20,7 @@ export default function PublicLayout({
 
       <ToastContainer />
 
-      <ApplicationPopup />
+      <AnnouncementPopup />
     </>
   );
 }
