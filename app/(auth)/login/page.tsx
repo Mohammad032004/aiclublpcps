@@ -1,12 +1,24 @@
 "use client";
+
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Zap, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import Image from "next/image";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  AlertCircle,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
 
 /**
  * LOGIN PAGE — route: /login
- * Bare page, no Navbar/Footer (handled by (auth)/layout.tsx)
+ * Clean white authentication page.
+ * Role is determined by the backend after authentication.
  */
+
 export default function AdminLoginPage() {
   return (
     <Suspense fallback={null}>
@@ -18,7 +30,7 @@ export default function AdminLoginPage() {
 function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [role, setRole] = useState("Admin");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -28,24 +40,41 @@ function AdminLoginForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
     if (!email || !password) {
       setError("Please enter both email and password.");
       return;
     }
+
     setLoading(true);
+
     try {
       const res = await fetch("/api/auth/admin-login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       });
+
       const data = await res.json();
+
       if (!res.ok) {
         setError(data.error || "Invalid credentials. Please try again.");
         return;
       }
+
       const next = searchParams.get("next");
-      router.push(next && next.startsWith("/admin") ? next : "/admin/dashboard");
+
+      router.push(
+        next && next.startsWith("/admin")
+          ? next
+          : "/admin/dashboard"
+      );
+
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -55,101 +84,395 @@ function AdminLoginForm() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "2rem",
-      background: "#050a12",
-      fontFamily: "'Space Grotesk', sans-serif",
-      position: "relative",
-      overflow: "hidden",
-    }}>
-      {/* BG orbs */}
-      <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: "#3b82f6", top: -150, right: -150, filter: "blur(120px)", opacity: 0.08, pointerEvents: "none" }} />
-      <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "#8b5cf6", bottom: -150, left: -150, filter: "blur(120px)", opacity: 0.08, pointerEvents: "none" }} />
-
-      <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
-        <div style={{ background: "rgba(10,21,37,0.92)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 24, padding: "2.5rem", backdropFilter: "blur(20px)" }}>
-          {/* Logo */}
-          <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
-            <div style={{ width: 52, height: 52, borderRadius: 16, background: "linear-gradient(135deg,#3b82f6,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
-              <Zap size={24} color="white" fill="white" />
-            </div>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "1.35rem", background: "linear-gradient(135deg,#3b82f6,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Ai-Club</div>
-            <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "1.3rem", marginTop: "0.5rem", color: "#e8f0fe" }}>Admin Panel</h2>
-            <p style={{ color: "#8ba3c7", fontSize: "0.82rem", marginTop: "0.3rem" }}>Restricted access — authorized members only</p>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#dfdcdc",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        fontFamily: "'Space Grotesk', sans-serif",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "430px",
+        }}
+      >
+        {/* Logo + Brand */}
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "34px",
+          }}
+        >
+          <div
+            style={{
+              width: "72px",
+              height: "72px",
+              margin: "0 auto 18px",
+              position: "relative",
+            }}
+          >
+            <Image
+              src="/ai-club-logo.png"
+              alt="AI Club"
+              fill
+              priority
+              style={{
+                objectFit: "contain",
+              }}
+            />
           </div>
 
-          {/* Role selector */}
-          <div style={{ display: "flex", gap: "0.4rem", background: "rgba(255,255,255,0.04)", padding: "0.3rem", borderRadius: 12, marginBottom: "1.5rem", border: "1px solid rgba(255,255,255,0.07)" }}>
-            {["Admin", "Core Member", "Member"].map(r => (
-              <button key={r} type="button" onClick={() => setRole(r)}
-                style={{ flex: 1, background: role === r ? "linear-gradient(135deg,#3b82f6,#8b5cf6)" : "transparent", color: role === r ? "white" : "#8ba3c7", border: "none", padding: "0.45rem 0.2rem", borderRadius: 9, fontSize: "0.76rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
-                {r}
-              </button>
-            ))}
+          <h1
+            style={{
+              margin: 0,
+              color: "#111827",
+              fontSize: "25px",
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              fontFamily: "'Syne', sans-serif",
+            }}
+          >
+            Artificial Intelligence Club
+          </h1>
+
+          <p
+            style={{
+              margin: "8px 0 0",
+              color: "#6b7280",
+              fontSize: "14px",
+            }}
+          >
+            Learn. Build. Innovate.
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <div
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: "20px",
+            padding: "32px",
+            boxShadow:
+              "0 12px 40px rgba(15, 23, 42, 0.07)",
+          }}
+        >
+          {/* Heading */}
+          <div style={{ marginBottom: "26px" }}>
+            <h2
+              style={{
+                margin: 0,
+                color: "#111827",
+                fontSize: "21px",
+                fontWeight: 750,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Welcome back
+            </h2>
+
+            <p
+              style={{
+                margin: "7px 0 0",
+                color: "#6b7280",
+                fontSize: "13px",
+                lineHeight: 1.5,
+              }}
+            >
+              Sign in to access your AI Club account.
+            </p>
           </div>
 
           <form onSubmit={handleLogin}>
             {/* Email */}
-            <div style={{ marginBottom: "1rem" }}>
-              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#8ba3c7", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "0.45rem" }}>Email</label>
-              <div style={{ position: "relative" }}>
-                <Mail size={14} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "#8ba3c7" }} />
+            <div style={{ marginBottom: "18px" }}>
+              <label
+                htmlFor="email"
+                style={{
+                  display: "block",
+                  marginBottom: "7px",
+                  color: "#374151",
+                  fontSize: "13px",
+                  fontWeight: 650,
+                }}
+              >
+                Email address
+              </label>
+
+              <div
+                style={{
+                  position: "relative",
+                }}
+              >
+                <Mail
+                  size={17}
+                  style={{
+                    position: "absolute",
+                    left: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                    pointerEvents: "none",
+                  }}
+                />
+
                 <input
+                  id="email"
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="admin@aiclub"
-                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8f0fe", padding: "0.7rem 1rem 0.7rem 38px", borderRadius: 10, fontSize: "0.875rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  autoComplete="email"
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    height: "46px",
+                    boxSizing: "border-box",
+                    padding: "0 14px 0 42px",
+                    borderRadius: "11px",
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#111827",
+                    fontSize: "14px",
+                    fontFamily: "inherit",
+                    outline: "none",
+                  }}
                 />
               </div>
             </div>
 
             {/* Password */}
-            <div style={{ marginBottom: "1.4rem" }}>
-              <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#8ba3c7", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "0.45rem" }}>Password</label>
-              <div style={{ position: "relative" }}>
-                <Lock size={14} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "#8ba3c7" }} />
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                htmlFor="password"
+                style={{
+                  display: "block",
+                  marginBottom: "7px",
+                  color: "#374151",
+                  fontSize: "13px",
+                  fontWeight: 650,
+                }}
+              >
+                Password
+              </label>
+
+              <div
+                style={{
+                  position: "relative",
+                }}
+              >
+                <Lock
+                  size={17}
+                  style={{
+                    position: "absolute",
+                    left: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                    pointerEvents: "none",
+                  }}
+                />
+
                 <input
+                  id="password"
                   type={showPw ? "text" : "password"}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8f0fe", padding: "0.7rem 40px 0.7rem 38px", borderRadius: 10, fontSize: "0.875rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    height: "46px",
+                    boxSizing: "border-box",
+                    padding: "0 44px 0 42px",
+                    borderRadius: "11px",
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#111827",
+                    fontSize: "14px",
+                    fontFamily: "inherit",
+                    outline: "none",
+                  }}
                 />
-                <button type="button" onClick={() => setShowPw(p => !p)}
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8ba3c7", cursor: "pointer", display: "flex" }}>
-                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+
+                <button
+                  type="button"
+                  onClick={() => setShowPw((p) => !p)}
+                  aria-label={
+                    showPw
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "28px",
+                    height: "28px",
+                    background: "transparent",
+                    border: "none",
+                    color: "#9ca3af",
+                    cursor: "pointer",
+                  }}
+                >
+                  {showPw ? (
+                    <EyeOff size={17} />
+                  ) : (
+                    <Eye size={17} />
+                  )}
                 </button>
               </div>
             </div>
 
             {/* Error */}
             {error && (
-              <div style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10, padding: "0.65rem 1rem", marginBottom: "1.1rem", fontSize: "0.8rem", color: "#f87171" }}>
-                <AlertCircle size={13} /> {error}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                  padding: "11px 12px",
+                  marginBottom: "18px",
+                  borderRadius: "10px",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  color: "#b91c1c",
+                  fontSize: "13px",
+                  lineHeight: 1.45,
+                }}
+              >
+                <AlertCircle
+                  size={16}
+                  style={{
+                    flexShrink: 0,
+                    marginTop: "1px",
+                  }}
+                />
+
+                <span>{error}</span>
               </div>
             )}
 
-            <button type="submit" disabled={loading}
-              style={{ width: "100%", background: loading ? "rgba(59,130,246,0.4)" : "linear-gradient(135deg,#3b82f6,#8b5cf6)", color: "white", border: "none", padding: "0.825rem", borderRadius: 12, fontSize: "0.9rem", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {/* Sign In */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
+                height: "48px",
+                border: "none",
+                borderRadius: "11px",
+                background: loading
+                  ? "#93c5fd"
+                  : "#111827",
+                color: "#ffffff",
+                fontSize: "14px",
+                fontWeight: 700,
+                fontFamily: "inherit",
+                cursor: loading
+                  ? "not-allowed"
+                  : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "all 0.2s ease",
+              }}
+            >
               {loading ? (
-                <><span style={{ width: 15, height: 15, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 1s linear infinite", display: "inline-block" }} /> Signing in...</>
-              ) : "Sign In to Dashboard"}
+                <>
+                  <span
+                    style={{
+                      width: "16px",
+                      height: "16px",
+                      border: "2px solid rgba(255,255,255,0.35)",
+                      borderTopColor: "#ffffff",
+                      borderRadius: "50%",
+                      animation:
+                        "loginSpin 0.8s linear infinite",
+                      display: "inline-block",
+                    }}
+                  />
+
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </form>
 
-          <p style={{ textAlign: "center", color: "#8ba3c7", fontSize: "0.72rem", marginTop: "1.5rem", lineHeight: 1.6 }}>
-            🔒 This page is not publicly linked. Share only with authorized team members.
-          </p>
+          {/* Security Note */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "7px",
+              marginTop: "22px",
+              color: "#9ca3af",
+              fontSize: "11px",
+            }}
+          >
+            <ShieldCheck size={14} />
+
+            <span>
+              Secure access for authorized AI Club members
+            </span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: "24px",
+            color: "#9ca3af",
+            fontSize: "11px",
+          }}
+        >
+          <div>
+            Artificial Intelligence Research & Development Cell
+          </div>
+
+          <div style={{ marginTop: "6px" }}>
+            Developed by Irfan Ansari
+          </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes loginSpin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        input:focus {
+          border-color: #111827 !important;
+          box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
+        }
+
+        input::placeholder {
+          color: #9ca3af;
+        }
+
+        button[type="submit"]:hover:not(:disabled) {
+          background: #00c01a !important;
+        }
       `}</style>
     </div>
   );
