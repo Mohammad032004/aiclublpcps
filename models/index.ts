@@ -316,6 +316,25 @@ const EventSchema = new Schema({
 
   location: String,
 
+  // ─────────────────────────────────────────
+  // College / Organization hosting the event
+  // ─────────────────────────────────────────
+
+  college: {
+    type: String,
+    trim: true,
+    default: "",
+  },
+
+  // ─────────────────────────────────────────
+  // Participant College Requirement
+  // ─────────────────────────────────────────
+
+  requireCollege: {
+    type: Boolean,
+    default: false,
+  },
+
   maxAttendees: Number,
 
   status: {
@@ -406,6 +425,12 @@ const EventRegistrationSchema = new Schema({
   },
 
   year: {
+    type: String,
+    trim: true,
+  },
+
+  // Participant's college / organization
+  college: {
     type: String,
     trim: true,
   },

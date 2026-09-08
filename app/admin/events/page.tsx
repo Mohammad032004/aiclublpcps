@@ -64,6 +64,8 @@ type EventRegistration = {
 type EventWithTeams = ClubEvent & {
   allowTeams?: boolean;
   maxTeamSize?: number;
+  college?: string;
+  requireCollege?: boolean;
   formFields?: FormFieldConfig[];
 };
 
@@ -73,6 +75,8 @@ type EForm = {
   description: string;
   date: string;
   location: string;
+  college: string;
+  requireCollege: boolean;
   maxAttendees: string;
   status: string;
   registrationOpen: boolean;
@@ -87,10 +91,12 @@ const INIT: EForm = {
   description: "",
   date: "",
   location: "",
+  college: "",
   maxAttendees: "",
   status: "upcoming",
   registrationOpen: true,
   tags: "",
+  requireCollege: false,
   allowTeams: false,
   maxTeamSize: "4",
 };
@@ -130,6 +136,8 @@ function EventModal({
           description: event.description || "",
           date: event.date?.slice(0, 10) || "",
           location: event.location || "",
+          college: event.college || "",
+          requireCollege: event.requireCollege ?? false,
           maxAttendees:
             event.maxAttendees?.toString() || "",
           status: event.status || "upcoming",
@@ -214,6 +222,8 @@ function EventModal({
         description: form.description.trim(),
         date: form.date || undefined,
         location: form.location.trim() || undefined,
+        college: form.college.trim() || undefined,
+        requireCollege: form.requireCollege,
         maxAttendees: form.maxAttendees
           ? Number(form.maxAttendees)
           : undefined,
@@ -262,16 +272,32 @@ function EventModal({
 
   return (
     <div
-      className="modal-bg"
       onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+        background: "rgba(0, 0, 0, 0.55)",
+        backdropFilter: "blur(5px)",
+        WebkitBackdropFilter: "blur(5px)",
+      }}
     >
       <div
-        className="modal"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: 680,
-          maxHeight: "90vh",
+          width: "100%",
+          maxWidth: 720,
+          maxHeight: "calc(100vh - 40px)",
           overflowY: "auto",
+          background: "var(--surface)",
+          border: "1px solid var(--border2)",
+          borderRadius: 18,
+          boxShadow: "0 25px 70px rgba(0,0,0,0.25)",
+          padding: "1.5rem",
         }}
       >
         <div
@@ -389,6 +415,20 @@ function EventModal({
             />
           </FormField>
 
+          <FormField label="College / Organization">
+            <input
+              className="input"
+              value={form.college}
+              onChange={(e) =>
+                update(
+                  "college",
+                  e.target.value
+                )
+              }
+              placeholder="Enter college or organization"
+            />
+          </FormField>
+
           <FormField label="Max Attendees">
             <input
               type="number"
@@ -464,6 +504,57 @@ function EventModal({
             }}
           />
         </FormField>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.65rem",
+            marginBottom: "1.25rem",
+            padding: "0.9rem 1rem",
+            border: "1px solid var(--border2)",
+            borderRadius: 12,
+            background: "var(--bg2)",
+          }}
+        >
+          <input
+            type="checkbox"
+            id="require-college"
+            checked={form.requireCollege}
+            onChange={(e) =>
+              update(
+                "requireCollege",
+                e.target.checked
+              )
+            }
+            style={{
+              width: 16,
+              height: 16,
+              accentColor: "var(--accent)",
+              cursor: "pointer",
+            }}
+          />
+
+          <label
+            htmlFor="require-college"
+            style={{
+              cursor: "pointer",
+              fontSize: "0.875rem",
+              color: "var(--text2)",
+            }}
+          >
+            <strong>Require participant college</strong>
+            <div
+              style={{
+                color: "var(--text3)",
+                fontSize: "0.72rem",
+                marginTop: "0.2rem",
+              }}
+            >
+              Participants must enter their college when registering.
+            </div>
+          </label>
+        </div>
 
         {/* HACKATHON TEAM SETTINGS */}
         <div

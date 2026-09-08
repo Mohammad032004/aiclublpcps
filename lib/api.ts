@@ -29,7 +29,6 @@ async function req<T>(
   return data as T;
 }
 
-
 // ─────────────────────────────────────────────
 // Applications
 // ─────────────────────────────────────────────
@@ -44,7 +43,6 @@ export interface Application {
   firstName: string;
   lastName: string;
   email: string;
-
   phone?: string;
   branch?: string;
   year?: string;
@@ -61,7 +59,6 @@ export interface Application {
   github?: string;
   linkedin?: string;
   gender?: string;
-
   status: AppStatus;
   submittedAt: string;
 }
@@ -103,7 +100,6 @@ export const applicationsApi = {
     ),
 };
 
-
 // ─────────────────────────────────────────────
 // Members
 // ─────────────────────────────────────────────
@@ -112,26 +108,19 @@ export interface Member {
   _id: string;
   name: string;
   email: string;
-
   phone?: string;
   branch?: string;
   year?: string;
-
   role: "admin" | "core" | "member";
-
   status:
     | "active"
     | "inactive"
     | "alumni";
-
   github?: string;
   linkedin?: string;
-
   joinedAt: string;
-
   bio?: string;
   skills?: string[];
-
   showOnAbout?: boolean;
 }
 
@@ -200,7 +189,6 @@ export const membersApi = {
     ),
 };
 
-
 // ─────────────────────────────────────────────
 // Messages
 // ─────────────────────────────────────────────
@@ -211,7 +199,6 @@ export interface Message {
   email: string;
   subject: string;
   message: string;
-
   read: boolean;
   createdAt: string;
 }
@@ -254,9 +241,8 @@ export const messagesApi = {
     ),
 };
 
-
 // ─────────────────────────────────────────────
-// Event
+// Events
 // ─────────────────────────────────────────────
 
 export interface FormField {
@@ -269,12 +255,24 @@ export interface FormField {
 
 export interface ClubEvent {
   _id: string;
+
   title: string;
+
   type: string;
 
   description?: string;
+
   date?: string;
+
   location?: string;
+
+  // College / organization hosting the event
+  college?: string;
+
+  // Whether participant college is required
+  // during registration
+  requireCollege?: boolean;
+
   maxAttendees?: number;
 
   status:
@@ -286,9 +284,11 @@ export interface ClubEvent {
   registrationOpen: boolean;
 
   tags?: string[];
+
   formFields?: FormField[];
 
   allowTeams?: boolean;
+
   maxTeamSize?: number;
 }
 
@@ -342,7 +342,6 @@ export const eventsApi = {
     ),
 };
 
-
 // ─────────────────────────────────────────────
 // Projects
 // ─────────────────────────────────────────────
@@ -352,17 +351,13 @@ export interface Project {
   title: string;
   description: string;
   category: string;
-
   tags?: string[];
-
   github?: string;
   liveDemo?: string;
   builtBy?: string[];
   year?: number;
-
   featured: boolean;
   visible: boolean;
-
   award?: string;
 }
 
@@ -412,7 +407,6 @@ export const projectsApi = {
     ),
 };
 
-
 // ─────────────────────────────────────────────
 // Resources
 // ─────────────────────────────────────────────
@@ -420,19 +414,14 @@ export const projectsApi = {
 export interface Resource {
   _id: string;
   title: string;
-
   description?: string;
-
   category: string;
   type: string;
-
   url?: string;
   fileSize?: string;
-
   access:
     | "public"
     | "members";
-
   downloads: number;
   createdAt: string;
 }
@@ -483,25 +472,19 @@ export const resourcesApi = {
     ),
 };
 
-
 // ─────────────────────────────────────────────
 // Announcements
 // ─────────────────────────────────────────────
 
 export interface Announcement {
   _id: string;
-
   title: string;
   description: string;
-
   badge?: string;
-
   buttonText?: string;
   buttonLink?: string;
-
   active: boolean;
   showPopup: boolean;
-
   createdAt: string;
   updatedAt: string;
 }
