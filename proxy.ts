@@ -12,15 +12,28 @@ import {
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Get the current session from the session cookie.
-  const session = verifySessionToken(
-    req.cookies.get(SESSION_COOKIE)?.value
-  );
+  // ─────────────────────────────────────────
+  // Get Session
+  // ─────────────────────────────────────────
 
-  // Check whether the request is for the admin panel.
-  const isAdminRoute = pathname.startsWith("/admin");
+  const token =
+    req.cookies.get(SESSION_COOKIE)?.value;
 
-  // /admin/login is kept as a legacy alias for /login.
+  let session = null;
+
+  if (token) {
+    session = verifySessionToken(token);
+  }
+
+  // ─────────────────────────────────────────
+  // Route Detection
+  // ─────────────────────────────────────────
+
+  const isAdminRoute =
+    pathname.startsWith("/admin");
+
+  // /admin/login is kept as a legacy alias
+  // for /login.
   const isLoginRoute =
     pathname === "/login" ||
     pathname === "/admin/login";
@@ -29,23 +42,29 @@ export function proxy(req: NextRequest) {
   // Protect Admin Routes
   // ─────────────────────────────────────────
 
-  // If the user is not logged in and tries to access
-  // any /admin route, redirect them to /login.
+  // If the user is not logged in and tries
+  // to access any /admin route, redirect
+  // them to /login.
   //
-  // /admin/login is excluded because it is treated
-  // as a login route.
+  // /admin/login is excluded because it is
+  // treated as a login route.
+
   if (
     isAdminRoute &&
     !session &&
     !isLoginRoute
   ) {
-    const url = req.nextUrl.clone();
+    const url =
+      req.nextUrl.clone();
 
     url.pathname = "/login";
     url.search = "";
 
     // Remember the page they originally wanted.
-    url.searchParams.set("next", pathname);
+    url.searchParams.set(
+      "next",
+      pathname
+    );
 
     return NextResponse.redirect(url);
   }
@@ -54,11 +73,20 @@ export function proxy(req: NextRequest) {
   // Logged-in User Visiting Login
   // ─────────────────────────────────────────
 
-  // If the user is already logged in and visits
-  // /login or /admin/login, send them directly
-  // to the admin dashboard.
+  // IMPORTANT:
+  //
+  // Do NOT redirect every logged-in user
+  // directly to /admin/dashboard here.
+  //
+  // The AdminLayout checks their permissions
+  // and sends them to the first permitted page.
+  //
+  // This is important for members who do not
+  // have Dashboard permission.
+
   if (isLoginRoute && session) {
-    const url = req.nextUrl.clone();
+    const url =
+      req.nextUrl.clone();
 
     url.pathname = "/admin/dashboard";
     url.search = "";
