@@ -1,5 +1,8 @@
 export class ApiError extends Error {
-  constructor(public status: number, public message: string) {
+  constructor(
+    public status: number,
+    public message: string
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -255,15 +258,10 @@ export interface FormField {
 
 export interface ClubEvent {
   _id: string;
-
   title: string;
-
   type: string;
-
   description?: string;
-
   date?: string;
-
   location?: string;
 
   // College / organization hosting the event
@@ -282,13 +280,9 @@ export interface ClubEvent {
     | "cancelled";
 
   registrationOpen: boolean;
-
   tags?: string[];
-
   formFields?: FormField[];
-
   allowTeams?: boolean;
-
   maxTeamSize?: number;
 }
 
@@ -419,10 +413,14 @@ export interface Resource {
   type: string;
   url?: string;
   fileSize?: string;
+
   access:
     | "public"
     | "members";
+
+  views: number;
   downloads: number;
+
   createdAt: string;
 }
 
@@ -468,6 +466,23 @@ export const resourcesApi = {
       `/api/resources/${id}`,
       {
         method: "DELETE",
+      }
+    ),
+
+  // Track resource views and downloads
+  track: (
+    id: string,
+    action: "view" | "download"
+  ) =>
+    req<{
+      success: boolean;
+      views: number;
+      downloads: number;
+    }>(
+      `/api/resources/${id}/track`,
+      {
+        method: "POST",
+        body: JSON.stringify({ action }),
       }
     ),
 };
@@ -531,7 +546,9 @@ export const announcementsApi = {
     ),
 
   // Delete announcement
-  delete: (id: string) =>
+  delete: (
+    id: string
+  ) =>
     req<{
       success: boolean;
     }>(

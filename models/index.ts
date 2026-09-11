@@ -693,16 +693,20 @@ const ResourceSchema = new Schema({
   fileSize: String,
 
   access: {
-    type: String,
-    enum: ["public", "members"],
-    default: "members",
-  },
+  type: String,
+  enum: ["public", "members"],
+  default: "members",
+},
 
-  downloads: {
-    type: Number,
-    default: 0,
-  },
+views: {
+  type: Number,
+  default: 0,
+},
 
+downloads: {
+  type: Number,
+  default: 0,
+},
   createdAt: {
     type: Date,
     default: Date.now,
