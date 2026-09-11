@@ -7,17 +7,27 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  req: NextRequest
-) {
+export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get(
-      SESSION_COOKIE
-    )?.value;
+    const token =
+      req.cookies.get(SESSION_COOKIE)?.value;
+
+    // No session cookie
+    if (!token) {
+      return NextResponse.json(
+        {
+          user: null,
+        },
+        {
+          status: 401,
+        }
+      );
+    }
 
     const session =
       verifySessionToken(token);
 
+    // Invalid or expired session
     if (!session) {
       return NextResponse.json(
         {
@@ -41,7 +51,12 @@ export async function GET(
           session.permissions ?? {},
       },
     });
-  } catch {
+  } catch (error) {
+    console.error(
+      "Admin session error:",
+      error
+    );
+
     return NextResponse.json(
       {
         user: null,
