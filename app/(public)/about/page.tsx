@@ -216,21 +216,23 @@ export default function AboutPage() {
         key={member._id}
         hover
         style={{
-          width: "100%",
-          maxWidth: 360,
-          minHeight: 0,
-          padding: 0,
-          borderRadius: 22,
-          overflow: "hidden",
-          textAlign: "center",
-          background: "var(--surface)",
-          border: "1px solid var(--border2)",
-          display: "flex",
-          flexDirection: "column",
-          boxSizing: "border-box",
-          transition:
-            "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease",
-        }}
+  width: "100%",
+  maxWidth: 390,
+  height: 390,
+  minHeight: 390,
+  padding: 0,
+  borderRadius: 20,
+  overflow: "hidden",
+  textAlign: "center",
+  background: "var(--surface)",
+  border:
+    "1px solid color-mix(in srgb, var(--text1) 16%, transparent)",
+  display: "flex",
+  flexDirection: "column",
+  boxSizing: "border-box",
+  transition:
+    "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease",
+}}
       >
         {/* Accent header */}
         <div
@@ -243,13 +245,16 @@ export default function AboutPage() {
         />
 
         <div
-          style={{
-            padding: "1.5rem 1.5rem 1.35rem",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+  style={{
+    padding: "1rem 1.35rem 0.65rem",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    flex: 1,
+    minHeight: 0,
+    boxSizing: "border-box",
+  }}
+>
           {/* Avatar */}
           <div
             style={{
@@ -282,6 +287,12 @@ export default function AboutPage() {
             style={{
               fontSize: "1.05rem",
               fontWeight: 750,
+              minHeight: 27,
+              maxHeight: 54,
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 2,
               margin: "0 0 0.45rem",
               color: "var(--text1)",
               lineHeight: 1.3,
@@ -336,21 +347,26 @@ export default function AboutPage() {
           {/* Bio */}
           {member.bio && (
             <p
-              style={{
-                fontSize: "0.78rem",
-                color: "var(--text2)",
-                lineHeight: 1.6,
-                margin: "0 0 1.15rem",
-                maxWidth: 320,
-                display: "block",
-                overflow: "visible",
-                whiteSpace: "normal",
-                wordBreak: "break-word",
-                overflowWrap: "break-word",
-              }}
-            >
-              {member.bio}
-            </p>
+  style={{
+    fontSize: "0.76rem",
+    color: "var(--text2)",
+    lineHeight: 1.55,
+    margin: "0 0 0.9rem",
+    width: "100%",
+    maxWidth: 350,
+    minHeight: "7.5em",
+    maxHeight: "7.5em",
+    overflow: "hidden",
+    textAlign: "justify",
+    wordBreak: "break-word",
+    overflowWrap: "anywhere",
+    display: "-webkit-box",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 5,
+  }}
+>
+  {member.bio}
+</p>
           )}
 
           {/* Actions */}
@@ -364,6 +380,8 @@ export default function AboutPage() {
                 flexWrap: "wrap",
                 width: "100%",
                 marginTop: "auto",
+                paddingTop: "0.5rem",
+                paddingBottom: "0.1rem",
               }}
             >
               {/* Contact */}
@@ -454,7 +472,7 @@ export default function AboutPage() {
       ====================================================== */}
       <section
         style={{
-          padding: "6rem 1.5rem 4rem",
+          padding: "3.75rem 1.5rem 2.75rem",
           textAlign: "center",
           position: "relative",
           overflow: "hidden",
@@ -493,7 +511,7 @@ export default function AboutPage() {
             style={{
               fontSize:
                 "clamp(2.5rem,6vw,4rem)",
-              marginBottom: "1rem",
+              marginBottom: "0.75rem",
             }}
           >
             We are{" "}
@@ -505,8 +523,8 @@ export default function AboutPage() {
           <p
             style={{
               color: "var(--text2)",
-              fontSize: "1.05rem",
-              lineHeight: 1.75,
+              fontSize: "0.98rem",
+              lineHeight: 1.65,
               margin: 0,
             }}
           >
@@ -528,7 +546,7 @@ export default function AboutPage() {
       ====================================================== */}
       <section
         style={{
-          padding: "5rem 1.5rem",
+          padding: "3.75rem 1.5rem",
           background: "var(--bg2)",
           borderTop: "1px solid var(--border2)",
           borderBottom: "1px solid var(--border2)",
@@ -542,7 +560,7 @@ export default function AboutPage() {
           <div
             style={{
               maxWidth: 1000,
-              margin: "0 auto 3rem",
+              margin: "0 auto 2.25rem",
               textAlign: "center",
             }}
           >
@@ -560,7 +578,7 @@ export default function AboutPage() {
                 alignItems: "center",
                 gap: "0.65rem",
                 flexWrap: "wrap",
-                marginTop: "2rem",
+                marginTop: "1.5rem",
                 width: "100%",
               }}
             >
@@ -754,7 +772,7 @@ export default function AboutPage() {
                   <div
                     key={tier}
                     style={{
-                      marginBottom: "4rem",
+                      marginBottom: "3rem",
                     }}
                   >
                     {/* =================================================
@@ -766,7 +784,7 @@ export default function AboutPage() {
                         alignItems: "center",
                         gap: "1rem",
                         width: "100%",
-                        marginBottom: "1.5rem",
+                        marginBottom: "1.25rem",
                       }}
                     >
                       {/* Title */}
@@ -833,7 +851,7 @@ export default function AboutPage() {
                         alignItems:
                           "flex-start",
                         flexWrap: "wrap",
-                        gap: "1.5rem",
+                        gap: "1.25rem",
                         width: "100%",
                       }}
                     >
@@ -880,7 +898,7 @@ export default function AboutPage() {
                       key={tier}
                       style={{
                         marginBottom:
-                          "4rem",
+                          "3rem",
                       }}
                     >
                       <div
@@ -995,7 +1013,7 @@ export default function AboutPage() {
       ====================================================== */}
       <section
         style={{
-          padding: "4rem 1.5rem",
+          padding: "2.75rem 1.5rem",
         }}
       >
         <div className="container">
@@ -1100,7 +1118,7 @@ export default function AboutPage() {
       ====================================================== */}
       <section
         style={{
-          padding: "4rem 1.5rem",
+          padding: "2.75rem 1.5rem",
         }}
       >
         <div
@@ -1142,7 +1160,7 @@ export default function AboutPage() {
               style={{
                 display: "flex",
                 gap: "1.5rem",
-                marginBottom: "2rem",
+                marginBottom: "1.25rem",
               }}
             >
               {/* Timeline icon */}
