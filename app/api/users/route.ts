@@ -1,32 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { User } from "@/models";
 import bcrypt from "bcryptjs";
 
-export const dynamic = "force-dynamic";
+import { connectDB } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
+import { User, UserActivityLog } from "@/models";
+
 
 // ─────────────────────────────────────────────
-// Permission Type
+// Types
 // ─────────────────────────────────────────────
 
-const PERMISSION_KEYS = [
-  "dashboard",
-  "applications",
-  "announcements",
-  "events",
-  "projects",
-  "resources",
-  "messages",
-  "team",
-  "settings",
-] as const;
+type Role = "admin" | "faculty" | "core" | "member";
 
-type PermissionKey = (typeof PERMISSION_KEYS)[number];
+type Permissions = {
+  dashboard: boolean;
+  applications: boolean;
+  announcements: boolean;
+  events: boolean;
+  projects: boolean;
+  resources: boolean;
+  messages: boolean;
+  team: boolean;
+  settings: boolean;
+};
 
-type Permissions = Record<PermissionKey, boolean>;
+
+// ─────────────────────────────────────────────
+// Default Permissions
+//
+// IMPORTANT:
+// Dashboard is NOT automatically enabled.
+// Admin can choose which permissions the user gets.
+// ─────────────────────────────────────────────
 
 const DEFAULT_PERMISSIONS: Permissions = {
-  dashboard: true,
+  dashboard: false,
   applications: false,
   announcements: false,
   events: false,
@@ -37,40 +45,127 @@ const DEFAULT_PERMISSIONS: Permissions = {
   settings: false,
 };
 
+
 // ─────────────────────────────────────────────
-// GET — Get all admin users
+// All Admin Permissions
+//
+// Admin users automatically receive access to
+// every admin section.
 // ─────────────────────────────────────────────
 
-export async function GET() {
+const ADMIN_PERMISSIONS: Permissions = {
+  dashboard: true,
+  applications: true,
+  announcements: true,
+  events: true,
+  projects: true,
+  resources: true,
+  messages: true,
+  team: true,
+  settings: true,
+};
+
+
+// ─────────────────────────────────────────────
+// GET
+// Get all admin panel users
+//
+// Only administrators can access this endpoint.
+// ─────────────────────────────────────────────
+
+export async function GET(req: NextRequest) {
   try {
+    // ─────────────────────────────────────────
+    // Admin Authentication
+    // ─────────────────────────────────────────
+
+    const { user, response } = await requireAdmin(req);
+
+    if (response) {
+      return response;
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
     await connectDB();
 
-    const users = await User.find(
-      {},
-      { password: 0 }
-    )
+    // ─────────────────────────────────────────
+    // Fetch Users
+    //
+    // Password is explicitly excluded.
+    // ─────────────────────────────────────────
+
+    const users = await User.find({})
+      .select("-password")
       .sort({ createdAt: -1 })
       .lean();
 
-    return NextResponse.json({ users });
-  } catch (err: unknown) {
+    return NextResponse.json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error("GET /api/users error:", error);
+
     return NextResponse.json(
       {
-        error:
-          err instanceof Error ? err.message : "Server error",
+        success: false,
+        error: "Failed to fetch users",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
 
+
 // ─────────────────────────────────────────────
-// POST — Create admin user
+// POST
+// Create a new admin panel user
+//
+// Only administrators can create users.
 // ─────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   try {
+    // ─────────────────────────────────────────
+    // Admin Authentication
+    // ─────────────────────────────────────────
+
+    const { user: admin, response } = await requireAdmin(req);
+
+    if (response) {
+      return response;
+    }
+
+    if (!admin) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
     await connectDB();
+
+    // ─────────────────────────────────────────
+    // Read Request Body
+    // ─────────────────────────────────────────
 
     const body = await req.json();
 
@@ -83,160 +178,307 @@ export async function POST(req: NextRequest) {
       permissions,
     } = body;
 
+
     // ─────────────────────────────────────────
-    // Basic validation
+    // Basic Validation
     // ─────────────────────────────────────────
 
-    if (!name || !email || !password) {
+    if (
+      typeof name !== "string" ||
+      !name.trim()
+    ) {
       return NextResponse.json(
         {
-          error:
-            "Name, email and password required",
+          success: false,
+          error: "Name is required",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    if (password.length < 8) {
+
+    if (
+      typeof email !== "string" ||
+      !email.trim()
+    ) {
       return NextResponse.json(
         {
-          error:
-            "Password must be at least 8 characters",
+          success: false,
+          error: "Email is required",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
+
+    if (
+      typeof password !== "string" ||
+      !password
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Password is required",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+
     // ─────────────────────────────────────────
-    // Validate role
+    // Password Length
     // ─────────────────────────────────────────
 
-    const allowedRoles = [
+    if (password.length < 6) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Password must be at least 6 characters long",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+
+    // ─────────────────────────────────────────
+    // Normalize Email
+    // ─────────────────────────────────────────
+
+    const normalizedEmail =
+      email.trim().toLowerCase();
+
+
+    // ─────────────────────────────────────────
+    // Validate Role
+    // ─────────────────────────────────────────
+
+    const validRoles: Role[] = [
       "admin",
       "faculty",
       "core",
       "member",
     ];
 
-    const selectedRole =
-      allowedRoles.includes(role) ? role : "member";
+    const selectedRole: Role =
+      validRoles.includes(role)
+        ? role
+        : "member";
+
 
     // ─────────────────────────────────────────
-    // Validate faculty position
+    // Faculty Position
+    //
+    // Faculty position only applies to faculty.
     // ─────────────────────────────────────────
 
-    let selectedFacultyPosition = null;
+    let finalFacultyPosition:
+      | "faculty_head"
+      | "club_instructor"
+      | null = null;
 
     if (selectedRole === "faculty") {
       if (
         facultyPosition === "faculty_head" ||
         facultyPosition === "club_instructor"
       ) {
-        selectedFacultyPosition = facultyPosition;
+        finalFacultyPosition =
+          facultyPosition;
       }
     }
 
+
     // ─────────────────────────────────────────
-    // Check duplicate email
+    // Check Duplicate Email
     // ─────────────────────────────────────────
 
-    const normalizedEmail =
-      email.toLowerCase().trim();
-
-    const exists = await User.findOne({
+    const existingUser = await User.findOne({
       email: normalizedEmail,
     });
 
-    if (exists) {
+    if (existingUser) {
       return NextResponse.json(
         {
-          error: "Email already exists",
+          success: false,
+          error: "A user with this email already exists",
         },
-        { status: 409 }
+        {
+          status: 409,
+        }
       );
     }
 
-    // ─────────────────────────────────────────
-    // Prepare permissions
-    // ─────────────────────────────────────────
 
-    const finalPermissions: Permissions = {
+    // ─────────────────────────────────────────────
+    // Build Permissions
+    // ─────────────────────────────────────────────
+
+    let finalPermissions: Permissions = {
       ...DEFAULT_PERMISSIONS,
     };
 
-    if (
+
+    // ─────────────────────────────────────────
+    // Admin
+    //
+    // Admin automatically receives all permissions.
+    // ─────────────────────────────────────────
+
+    if (selectedRole === "admin") {
+      finalPermissions = {
+        ...ADMIN_PERMISSIONS,
+      };
+    } else if (
       permissions &&
       typeof permissions === "object"
     ) {
-      for (const key of PERMISSION_KEYS) {
-        if (typeof permissions[key] === "boolean") {
-          finalPermissions[key] = permissions[key];
-        }
-      }
+      finalPermissions = {
+        dashboard:
+          permissions.dashboard === true,
+
+        applications:
+          permissions.applications === true,
+
+        announcements:
+          permissions.announcements === true,
+
+        events:
+          permissions.events === true,
+
+        projects:
+          permissions.projects === true,
+
+        resources:
+          permissions.resources === true,
+
+        messages:
+          permissions.messages === true,
+
+        team:
+          permissions.team === true,
+
+        settings:
+          permissions.settings === true,
+      };
     }
 
-    // Admin always gets everything
-    if (selectedRole === "admin") {
-      for (const key of PERMISSION_KEYS) {
-        finalPermissions[key] = true;
-      }
-    }
-
-    // Dashboard should always be available
-    finalPermissions.dashboard = true;
 
     // ─────────────────────────────────────────
-    // Hash password
+    // Hash Password
     // ─────────────────────────────────────────
 
-    const hashed = await bcrypt.hash(
-      password,
-      12
-    );
+    const hashedPassword =
+      await bcrypt.hash(password, 12);
+
 
     // ─────────────────────────────────────────
-    // Create user
+    // Create User
     // ─────────────────────────────────────────
 
-    const user = new User({
+    const newUser = await User.create({
       name: name.trim(),
+
       email: normalizedEmail,
-      password: hashed,
+
+      password: hashedPassword,
+
+      sessionVersion: 0,
+
       role: selectedRole,
-      facultyPosition: selectedFacultyPosition,
+
+      facultyPosition:
+        finalFacultyPosition,
+
       permissions: finalPermissions,
     });
 
-    await user.save();
 
     // ─────────────────────────────────────────
-    // Response
+    // Activity Log
+    //
+    // Password is NEVER stored.
     // ─────────────────────────────────────────
+
+    await UserActivityLog.create({
+      userId: newUser._id,
+
+      action: "account_created",
+
+      description:
+        `Account created by administrator ${admin.name}.`,
+
+      changedBy: admin._id,
+
+      changedByType: "admin",
+    });
+
+
+    // ─────────────────────────────────────────
+    // Safe User Response
+    //
+    // Never return password.
+    // ─────────────────────────────────────────
+
+    const safeUser = {
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      facultyPosition:
+        newUser.facultyPosition,
+      permissions:
+        newUser.permissions,
+      sessionVersion:
+        newUser.sessionVersion,
+      createdAt:
+        newUser.createdAt,
+    };
+
 
     return NextResponse.json(
       {
         success: true,
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          facultyPosition:
-            user.facultyPosition,
-          permissions:
-            user.permissions,
-          createdAt: user.createdAt,
-        },
+        message: "User created successfully",
+        user: safeUser,
       },
-      { status: 201 }
+      {
+        status: 201,
+      }
     );
-  } catch (err: unknown) {
+  } catch (error: any) {
+    console.error("POST /api/users error:", error);
+
+    // ─────────────────────────────────────────
+    // MongoDB Duplicate Key Protection
+    // ─────────────────────────────────────────
+
+    if (error?.code === 11000) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "A user with this email already exists",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
     return NextResponse.json(
       {
-        error:
-          err instanceof Error ? err.message : "Server error",
+        success: false,
+        error: "Failed to create user",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }

@@ -26,6 +26,17 @@ const UserSchema = new Schema({
   },
 
   // ─────────────────────────────────────────
+  // Session Version
+  // Increment this when password/email/security
+  // credentials change to invalidate old sessions.
+  // ─────────────────────────────────────────
+
+  sessionVersion: {
+    type: Number,
+    default: 0,
+  },
+
+  // ─────────────────────────────────────────
   // Admin Panel Role
   // ─────────────────────────────────────────
 
@@ -53,7 +64,7 @@ const UserSchema = new Schema({
   permissions: {
     dashboard: {
       type: Boolean,
-      default: true,
+      default: false,
     },
 
     applications: {
@@ -105,6 +116,105 @@ const UserSchema = new Schema({
 
 export const User =
   models.User || model("User", UserSchema);
+
+
+// ─────────────────────────────────────────────
+// User Activity Log
+// Tracks account and administrative changes.
+// IMPORTANT:
+// Never store actual password values here.
+// ─────────────────────────────────────────────
+
+const UserActivityLogSchema = new Schema(
+  {
+    // User whose account was affected
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+
+    // ─────────────────────────────────────────
+    // Activity Type
+    // ─────────────────────────────────────────
+
+    action: {
+      type: String,
+      enum: [
+        "account_created",
+
+        "name_changed",
+        "email_changed",
+        "password_changed",
+
+        "role_changed",
+        "permissions_changed",
+        "faculty_position_changed",
+
+        "admin_name_changed",
+        "admin_email_changed",
+        "admin_password_reset",
+        "admin_role_changed",
+        "admin_permissions_changed",
+        "admin_faculty_position_changed",
+
+        "account_deleted",
+      ],
+      required: true,
+      index: true,
+    },
+
+    // Human-readable explanation
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    // Previous value.
+    // Never use this for storing passwords.
+    oldValue: {
+      type: String,
+      default: undefined,
+    },
+
+    // New value.
+    // Never use this for storing passwords.
+    newValue: {
+      type: String,
+      default: undefined,
+    },
+
+    // User who performed the action
+    // This may be the same user for self-service
+    // changes or an admin for administrative changes.
+    changedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+
+    // Whether the change was performed by
+    // the account owner or an administrator.
+    changedByType: {
+      type: String,
+      enum: ["self", "admin"],
+      required: true,
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
+  }
+);
+
+export const UserActivityLog =
+  models.UserActivityLog ||
+  model("UserActivityLog", UserActivityLogSchema);
 
 
 // ─────────────────────────────────────────────

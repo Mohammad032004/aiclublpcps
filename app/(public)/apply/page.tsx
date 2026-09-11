@@ -170,7 +170,7 @@ export default function ApplyPage() {
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "6rem 1.5rem 4rem" }}>
-      <SectionHeader tag="Join AI-Club" title="Learn. Build. Innovate." subtitle="Batch 2026 · Applications close on September 10, 2026" center={false}/>
+      <SectionHeader tag="Join AI-Club" title="Learn. Build. Innovate." subtitle="Batch 2026 · Applications closing soon, 2026" center={false}/>
 
       {/* Stepper */}
       <div className="stepper">
@@ -239,8 +239,8 @@ export default function ApplyPage() {
   <FormField label="Relevant Courses & Certifications">
     <textarea
       className="input"
-      value={form.certifications}
       onChange={e => up("certifications", e.target.value)}
+      value={form.certifications}
       placeholder="List any AI/ML certifications, online courses…"
     />
   </FormField>
@@ -286,7 +286,7 @@ export default function ApplyPage() {
             <textarea className={`input ${errors.contribution ? "error" : ""}`} style={{ minHeight: 130 }} value={form.contribution} onChange={e => up("contribution",e.target.value)} placeholder="Skills, ideas, or projects you'd like to bring…"/>
             <span style={{ fontSize: "0.72rem", color: form.contribution.length < 30 ? "var(--text3)" : "var(--green)" }}>{form.contribution.length} chars {form.contribution.length < 30 && "(min 30)"}</span>
           </FormField>
-          <FormField label="Your 2-year goals">
+          <FormField label="Your 1-year goals">
             <textarea className="input" value={form.goals} onChange={e => up("goals",e.target.value)} placeholder="Research, internships, startup, publications…"/>
           </FormField>
           <div className="alert alert-info" style={{ marginTop: "0.5rem" }}>

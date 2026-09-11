@@ -138,7 +138,7 @@ const PERMISSIONS: {
 // ─────────────────────────────────────────────
 
 const DEFAULT_PERMISSIONS: Permissions = {
-  dashboard: true,
+  dashboard: false,
   applications: false,
   announcements: false,
   events: false,
@@ -321,16 +321,8 @@ function PermissionsEditor({
                 padding: "0.8rem",
                 border: "1px solid var(--border)",
                 borderRadius: 10,
-                cursor:
-                  disabled ||
-                  permission.key === "dashboard"
-                    ? "default"
-                    : "pointer",
-                opacity:
-                  disabled ||
-                  permission.key === "dashboard"
-                    ? 0.85
-                    : 1,
+                cursor: disabled ? "default" : "pointer",
+                opacity: disabled ? 0.85 : 1,
                 background: permissions[permission.key]
                   ? "var(--accent-bg)"
                   : "transparent",
@@ -339,10 +331,7 @@ function PermissionsEditor({
               <input
                 type="checkbox"
                 checked={permissions[permission.key]}
-                disabled={
-                  disabled ||
-                  permission.key === "dashboard"
-                }
+                disabled={disabled}
                 onChange={(e) =>
                   onChange(
                     permission.key,
@@ -482,9 +471,6 @@ function UserModal({
       };
     }
 
-    // Dashboard always enabled
-    permissions.dashboard = true;
-
     setForm((prev) => ({
       ...prev,
       role,
@@ -511,7 +497,6 @@ function UserModal({
       permissions: {
         ...prev.permissions,
         [key]: value,
-        dashboard: true,
       },
     }));
   };
@@ -826,6 +811,12 @@ export default function AdminSettingsPage() {
   const [tab, setTab] =
     useState<Tab>("password");
 
+  const [currentUser, setCurrentUser] =
+    useState<AdminUser | null>(null);
+
+  const [loadingCurrentUser, setLoadingCurrentUser] =
+    useState(true);
+
   const [users, setUsers] =
     useState<AdminUser[]>([]);
 
@@ -855,6 +846,59 @@ export default function AdminSettingsPage() {
 
   const [emLoading, setEmLoading] =
     useState(false);
+
+  // ─────────────────────────────────────────
+  // Load current logged-in user
+  // ─────────────────────────────────────────
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCurrentUser = async () => {
+      try {
+        const response = await fetch(
+          "/api/auth/session",
+          {
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to load session");
+        }
+
+        const data = await response.json();
+
+        if (!mounted) return;
+
+        if (!data?.authenticated || !data?.user) {
+          window.location.href = "/login";
+          return;
+        }
+
+        setCurrentUser(data.user);
+      } catch (error) {
+        console.error(
+          "Failed to load current user:",
+          error
+        );
+
+        if (mounted) {
+          window.location.href = "/login";
+        }
+      } finally {
+        if (mounted) {
+          setLoadingCurrentUser(false);
+        }
+      }
+    };
+
+    loadCurrentUser();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // ─────────────────────────────────────────
   // Load Users
@@ -900,10 +944,13 @@ export default function AdminSettingsPage() {
   };
 
   useEffect(() => {
-    if (tab === "users") {
+    if (
+      tab === "users" &&
+      currentUser?.role === "admin"
+    ) {
       loadUsers();
     }
-  }, [tab]);
+  }, [tab, currentUser]);
 
   // ─────────────────────────────────────────
   // Change Password
@@ -948,11 +995,9 @@ export default function AdminSettingsPage() {
                 "application/json",
             },
             body: JSON.stringify({
-              email: pw.email,
-              currentPassword:
-                pw.current,
-              newPassword:
-                pw.newPw,
+              currentPassword: pw.current,
+              newPassword: pw.newPw,
+              confirmPassword: pw.confirm,
             }),
           }
         );
@@ -1016,7 +1061,10 @@ export default function AdminSettingsPage() {
               "Content-Type":
                 "application/json",
             },
-            body: JSON.stringify(em),
+            body: JSON.stringify({
+              newEmail: em.newEmail,
+              password: em.password,
+            }),
           }
         );
 
@@ -1212,12 +1260,34 @@ export default function AdminSettingsPage() {
       label: "Change Email",
       icon: Mail,
     },
-    {
-      id: "users",
-      label: "User Management",
-      icon: Users,
-    },
+    ...(currentUser?.role === "admin"
+      ? [
+          {
+            id: "users" as Tab,
+            label: "User Management",
+            icon: Users,
+          },
+        ]
+      : []),
   ];
+
+  // ─────────────────────────────────────────
+  // Security guard for User Management
+  // ─────────────────────────────────────────
+
+  useEffect(() => {
+    if (
+      currentUser &&
+      currentUser.role !== "admin" &&
+      tab === "users"
+    ) {
+      setTab("password");
+    }
+  }, [currentUser, tab]);
+
+  // ─────────────────────────────────────────
+  // Role Colors
+  // ─────────────────────────────────────────
 
   const ROLE_COLORS: Record<
     string,
@@ -1228,6 +1298,29 @@ export default function AdminSettingsPage() {
     core: "var(--purple, var(--accent))",
     member: "var(--green)",
   };
+
+  // ─────────────────────────────────────────
+  // Loading current user
+  // ─────────────────────────────────────────
+
+  if (loadingCurrentUser) {
+    return (
+      <div
+        style={{
+          minHeight: "50vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
 
   // ─────────────────────────────────────────
   // Render
@@ -1354,21 +1447,20 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          <FormField label="Your Email">
-            <input
-              type="email"
-              className="input"
-              value={pw.email}
-              onChange={(e) =>
-                setPw((prev) => ({
-                  ...prev,
-                  email:
-                    e.target.value,
-                }))
-              }
-              placeholder="admin@aiclub.in"
-            />
-          </FormField>
+          <div
+            style={{
+              padding: "0.75rem 0.85rem",
+              marginBottom: "1rem",
+              borderRadius: 9,
+              background: "var(--surface2)",
+              border: "1px solid var(--border)",
+              fontSize: "0.78rem",
+              color: "var(--text2)",
+            }}
+          >
+            Your password will be changed for the account
+            you are currently logged in with.
+          </div>
 
           <PwField
             label="Current Password"

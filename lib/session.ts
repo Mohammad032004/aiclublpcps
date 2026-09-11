@@ -1,26 +1,8 @@
 import crypto from "crypto";
 
-/**
- * Minimal signed-cookie session for the admin panel.
- *
- * Uses Node's built-in crypto (HMAC-SHA256).
- *
- * The cookie contains only trusted session information.
- * Permissions can be refreshed from the database when needed.
- */
-
-const SECRET =
-  process.env.SESSION_SECRET ||
-  process.env.NEXTAUTH_SECRET ||
-  "dev-insecure-secret-change-me";
-
 export const SESSION_COOKIE = "admin_session";
 
-export const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
-
-// ─────────────────────────────────────────────
-// Permission Types
-// ─────────────────────────────────────────────
+export const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
 export type PermissionKey =
   | "dashboard"
@@ -33,154 +15,129 @@ export type PermissionKey =
   | "team"
   | "settings";
 
-export type Permissions = Record<
-  PermissionKey,
-  boolean
->;
+export type UserRole = "admin" | "faculty" | "core" | "member";
 
-// ─────────────────────────────────────────────
-// Session Payload
-// ─────────────────────────────────────────────
+export type FacultyPosition =
+  | "faculty_head"
+  | "club_instructor"
+  | null;
 
-export interface SessionPayload {
+export type SessionPayload = {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
+  facultyPosition?: FacultyPosition;
+  permissions?: Record<string, boolean>;
 
-  role:
-    | "admin"
-    | "faculty"
-    | "core"
-    | "member"
-    | string;
-
-  facultyPosition?:
-    | "faculty_head"
-    | "club_instructor"
-    | null;
-
-  permissions?: Partial<Permissions>;
+  // Used to invalidate old sessions after security-sensitive changes
+  sessionVersion?: number;
 
   exp: number;
+};
+
+const SECRET =
+  process.env.SESSION_SECRET ||
+  process.env.NEXTAUTH_SECRET ||
+  "dev-insecure-secret-change-me";
+
+function base64url(input: Buffer | string) {
+  return Buffer.from(input)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
-// ─────────────────────────────────────────────
-// Secret
-// ─────────────────────────────────────────────
+function base64urlDecode(input: string) {
+  const padded = input
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .padEnd(Math.ceil(input.length / 4) * 4, "=");
 
-function sign(data: string): string {
-  return crypto
-    .createHmac("sha256", SECRET)
-    .update(data)
-    .digest("base64url");
+  return Buffer.from(padded, "base64");
 }
 
-// ─────────────────────────────────────────────
-// Constant-time comparison
-// ─────────────────────────────────────────────
-
-function safeEqual(
-  a: string,
-  b: string
-): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-
-  if (bufA.length !== bufB.length) {
-    return false;
-  }
-
-  return crypto.timingSafeEqual(
-    bufA,
-    bufB
+function sign(data: string) {
+  return base64url(
+    crypto
+      .createHmac("sha256", SECRET)
+      .update(data)
+      .digest()
   );
 }
 
-// ─────────────────────────────────────────────
-// Create Session
-// ─────────────────────────────────────────────
+function safeEqual(a: string, b: string) {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
 
-export function createSessionToken(
-  payload: Omit<
-    SessionPayload,
-    "exp"
-  >
-): string {
-  const full: SessionPayload = {
-    ...payload,
-    exp:
-      Date.now() +
-      SESSION_MAX_AGE * 1000,
-  };
+  if (aBuffer.length !== bBuffer.length) {
+    return false;
+  }
 
-  const data = Buffer.from(
-    JSON.stringify(full)
-  ).toString("base64url");
-
-  const signature = sign(data);
-
-  return `${data}.${signature}`;
+  return crypto.timingSafeEqual(aBuffer, bBuffer);
 }
 
-// ─────────────────────────────────────────────
-// Verify Session
-// ─────────────────────────────────────────────
+export function createSessionToken(
+  payload: Omit<SessionPayload, "exp"> & { exp?: number }
+) {
+  const sessionPayload: SessionPayload = {
+    ...payload,
+    exp:
+      payload.exp ??
+      Math.floor(Date.now() / 1000) + SESSION_MAX_AGE,
+  };
+
+  const encodedPayload = base64url(
+    JSON.stringify(sessionPayload)
+  );
+
+  const signature = sign(encodedPayload);
+
+  return `${encodedPayload}.${signature}`;
+}
 
 export function verifySessionToken(
-  token?: string | null
+  token: string
 ): SessionPayload | null {
-  if (!token) {
-    return null;
-  }
-
-  const parts = token.split(".");
-
-  if (parts.length !== 2) {
-    return null;
-  }
-
-  const [data, signature] = parts;
-
-  if (!data || !signature) {
-    return null;
-  }
-
-  const expectedSignature = sign(data);
-
-  if (
-    !safeEqual(
-      signature,
-      expectedSignature
-    )
-  ) {
-    return null;
-  }
-
   try {
-    const payload = JSON.parse(
-      Buffer.from(
-        data,
-        "base64url"
-      ).toString("utf8")
-    ) as SessionPayload;
-
-    if (
-      !payload.exp ||
-      payload.exp < Date.now()
-    ) {
+    if (!token) {
       return null;
     }
 
-    if (
-      !payload.id ||
-      !payload.email ||
-      !payload.name
-    ) {
+    const parts = token.split(".");
+
+    if (parts.length !== 2) {
+      return null;
+    }
+
+    const [encodedPayload, signature] = parts;
+
+    const expectedSignature = sign(encodedPayload);
+
+    if (!safeEqual(signature, expectedSignature)) {
+      return null;
+    }
+
+    const payload = JSON.parse(
+      base64urlDecode(encodedPayload).toString("utf8")
+    ) as SessionPayload;
+
+    if (!payload?.id || !payload?.email || !payload?.role) {
+      return null;
+    }
+
+    if (!payload.exp) {
+      return null;
+    }
+
+    if (payload.exp < Math.floor(Date.now() / 1000)) {
       return null;
     }
 
     return payload;
-  } catch {
+  } catch (error) {
+    console.error("verifySessionToken error:", error);
     return null;
   }
 }

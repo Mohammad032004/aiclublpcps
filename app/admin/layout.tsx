@@ -17,6 +17,7 @@ import {
   Bell,
   ChevronLeft,
   UserCog,
+  UserCircle,
   Megaphone,
   Shield,
 } from "lucide-react";
@@ -42,7 +43,10 @@ type PermissionKey =
   | "team"
   | "settings";
 
-type Permissions = Record<PermissionKey, boolean>;
+type Permissions = Record<
+  PermissionKey,
+  boolean
+>;
 
 type CurrentUser = {
   id?: string;
@@ -61,7 +65,7 @@ const NAV: {
   href: string;
   icon: React.ElementType;
   label: string;
-  permission: PermissionKey;
+  permission?: PermissionKey;
 }[] = [
   {
     href: "/admin/dashboard",
@@ -125,6 +129,17 @@ const NAV: {
     label: "Settings",
     permission: "settings",
   },
+
+  // ─────────────────────────────────────────
+  // Personal Account
+  // Available to every authenticated user
+  // ─────────────────────────────────────────
+
+  {
+    href: "/admin/account",
+    icon: UserCircle,
+    label: "My Account",
+  },
 ];
 
 // ─────────────────────────────────────────────
@@ -137,11 +152,17 @@ function getRoleLabel(user: CurrentUser) {
   }
 
   if (user.role === "faculty") {
-    if (user.facultyPosition === "faculty_head") {
+    if (
+      user.facultyPosition ===
+      "faculty_head"
+    ) {
       return "Faculty Head";
     }
 
-    if (user.facultyPosition === "club_instructor") {
+    if (
+      user.facultyPosition ===
+      "club_instructor"
+    ) {
       return "Club Instructor";
     }
 
@@ -163,16 +184,119 @@ function getDefaultPermissions(
   userPermissions?: Partial<Permissions>
 ): Permissions {
   return {
-    dashboard: userPermissions?.dashboard ?? true,
-    applications: userPermissions?.applications ?? false,
-    announcements: userPermissions?.announcements ?? false,
-    events: userPermissions?.events ?? false,
-    projects: userPermissions?.projects ?? false,
-    resources: userPermissions?.resources ?? false,
-    messages: userPermissions?.messages ?? false,
-    team: userPermissions?.team ?? false,
-    settings: userPermissions?.settings ?? false,
+    dashboard:
+      userPermissions?.dashboard ?? false,
+
+    applications:
+      userPermissions?.applications ?? false,
+
+    announcements:
+      userPermissions?.announcements ?? false,
+
+    events:
+      userPermissions?.events ?? false,
+
+    projects:
+      userPermissions?.projects ?? false,
+
+    resources:
+      userPermissions?.resources ?? false,
+
+    messages:
+      userPermissions?.messages ?? false,
+
+    team:
+      userPermissions?.team ?? false,
+
+    settings:
+      userPermissions?.settings ?? false,
   };
+}
+
+// ─────────────────────────────────────────────
+// Get First Allowed Route
+// ─────────────────────────────────────────────
+
+function getFirstAllowedRoute(
+  user: CurrentUser
+): string {
+  // Admin always starts at Dashboard.
+  if (user.role === "admin") {
+    return "/admin/dashboard";
+  }
+
+  const permissions =
+    getDefaultPermissions(
+      user.permissions
+    );
+
+  // The order here determines which page
+  // the user gets when multiple permissions
+  // are enabled.
+  const routes: {
+    permission: PermissionKey;
+    href: string;
+  }[] = [
+    {
+      permission: "dashboard",
+      href: "/admin/dashboard",
+    },
+
+    {
+      permission: "applications",
+      href: "/admin/applications",
+    },
+
+    {
+      permission: "announcements",
+      href: "/admin/announcements",
+    },
+
+    {
+      permission: "events",
+      href: "/admin/events",
+    },
+
+    {
+      permission: "projects",
+      href: "/admin/projects",
+    },
+
+    {
+      permission: "resources",
+      href: "/admin/resources",
+    },
+
+    {
+      permission: "messages",
+      href: "/admin/messages",
+    },
+
+    {
+      permission: "team",
+      href: "/admin/team",
+    },
+
+    {
+      permission: "settings",
+      href: "/admin/settings",
+    },
+  ];
+
+  const firstAllowed = routes.find(
+    (route) =>
+      permissions[
+        route.permission
+      ] === true
+  );
+
+  // If no administrative permission
+  // is enabled, My Account is still
+  // available.
+  return (
+    firstAllowed?.href ||
+    "/admin/account"
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -187,14 +311,17 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] =
+    useState(false);
 
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [user, setUser] =
+    useState<CurrentUser | null>(null);
 
-  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingUser, setLoadingUser] =
+    useState(true);
 
   // ─────────────────────────────────────────
-  // Load current logged-in user
+  // Load Current Logged-in User
   // ─────────────────────────────────────────
 
   useEffect(() => {
@@ -202,21 +329,30 @@ export default function AdminLayout({
 
     const loadSession = async () => {
       try {
-        const response = await fetch("/api/admin/session", {
-          cache: "no-store",
-        });
+        const response = await fetch(
+          "/api/auth/session",
+          {
+            cache: "no-store",
+          }
+        );
 
         if (!response.ok) {
-          throw new Error("Failed to load session");
+          throw new Error(
+            "Failed to load session"
+          );
         }
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
-        const sessionUser = data?.user as
-          | CurrentUser
-          | undefined;
+        const sessionUser =
+          data?.user as
+            | CurrentUser
+            | undefined;
 
         if (!sessionUser) {
           router.replace("/login");
@@ -224,7 +360,12 @@ export default function AdminLayout({
         }
 
         setUser(sessionUser);
-      } catch {
+      } catch (error) {
+        console.error(
+          "Session loading error:",
+          error
+        );
+
         if (mounted) {
           router.replace("/login");
         }
@@ -243,7 +384,88 @@ export default function AdminLayout({
   }, [router]);
 
   // ─────────────────────────────────────────
-  // Login page
+  // Permission / Route Protection
+  //
+  // IMPORTANT:
+  // This hook is BEFORE any conditional
+  // return so React's hook order never changes.
+  // ─────────────────────────────────────────
+
+  useEffect(() => {
+    if (loadingUser || !user) {
+      return;
+    }
+
+    // My Account is available to everyone.
+    if (
+      pathname === "/admin/account" ||
+      pathname?.startsWith(
+        "/admin/account/"
+      )
+    ) {
+      return;
+    }
+
+    // Admin can access every section.
+    if (user.role === "admin") {
+      return;
+    }
+
+    const permissions =
+      getDefaultPermissions(
+        user.permissions
+      );
+
+    // Find the current navigation item.
+    const currentNavItem = NAV.find(
+      (item) =>
+        pathname === item.href ||
+        pathname?.startsWith(
+          item.href + "/"
+        )
+    );
+
+    // If the current route isn't one of
+    // the navigation routes, don't interfere.
+    if (!currentNavItem) {
+      return;
+    }
+
+    // My Account has no permission.
+    if (!currentNavItem.permission) {
+      return;
+    }
+
+    // User has permission for the page.
+    if (
+      permissions[
+        currentNavItem.permission
+      ] === true
+    ) {
+      return;
+    }
+
+    // User doesn't have permission.
+    // Redirect to their first allowed page.
+    const firstAllowedRoute =
+      getFirstAllowedRoute(user);
+
+    if (
+      pathname !== firstAllowedRoute
+    ) {
+      router.replace(
+        firstAllowedRoute
+      );
+    }
+  }, [
+    loadingUser,
+    user,
+    pathname,
+    router,
+  ]);
+
+  // ─────────────────────────────────────────
+  // Login Page
   // ─────────────────────────────────────────
 
   if (
@@ -265,7 +487,8 @@ export default function AdminLayout({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "var(--surface)",
+          background:
+            "var(--surface)",
           color: "var(--text2)",
         }}
       >
@@ -278,12 +501,15 @@ export default function AdminLayout({
             style={{
               width: 34,
               height: 34,
-              border: "3px solid var(--border2)",
-              borderTopColor: "var(--accent)",
+              border:
+                "3px solid var(--border2)",
+              borderTopColor:
+                "var(--accent)",
               borderRadius: "50%",
               animation:
                 "admin-loading-spin 0.8s linear infinite",
-              margin: "0 auto 0.75rem",
+              margin:
+                "0 auto 0.75rem",
             }}
           />
 
@@ -308,7 +534,7 @@ export default function AdminLayout({
   }
 
   // ─────────────────────────────────────────
-  // No user
+  // No User
   // ─────────────────────────────────────────
 
   if (!user) {
@@ -316,22 +542,28 @@ export default function AdminLayout({
   }
 
   // ─────────────────────────────────────────
-  // Determine permissions
+  // Determine Permissions
   // ─────────────────────────────────────────
 
   const permissions: Permissions =
-    getDefaultPermissions(user.permissions);
+    getDefaultPermissions(
+      user.permissions
+    );
 
-  const isAdmin = user.role === "admin";
+  const isAdmin =
+    user.role === "admin";
 
   // ─────────────────────────────────────────
-  // Filter navigation based on permissions
+  // Filter Navigation
   // ─────────────────────────────────────────
 
   const visibleNav = NAV.filter(
     (item) =>
       isAdmin ||
-      permissions[item.permission] === true
+      !item.permission ||
+      permissions[
+        item.permission
+      ] === true
   );
 
   // ─────────────────────────────────────────
@@ -340,9 +572,12 @@ export default function AdminLayout({
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      });
+      await fetch(
+        "/api/auth/logout",
+        {
+          method: "POST",
+        }
+      );
     } finally {
       router.push("/login");
       router.refresh();
@@ -350,12 +585,16 @@ export default function AdminLayout({
   };
 
   // ─────────────────────────────────────────
-  // Current page
+  // Current Page
   // ─────────────────────────────────────────
 
   const currentPage =
-    NAV.find((item) =>
-      pathname?.startsWith(item.href)
+    NAV.find(
+      (item) =>
+        pathname === item.href ||
+        pathname?.startsWith(
+          item.href + "/"
+        )
     )?.label || "Admin Panel";
 
   // ─────────────────────────────────────────
@@ -371,7 +610,9 @@ export default function AdminLayout({
 
       <aside
         className={`admin-sidebar ${
-          collapsed ? "collapsed" : ""
+          collapsed
+            ? "collapsed"
+            : ""
         }`}
       >
         {/* Logo */}
@@ -396,7 +637,8 @@ export default function AdminLayout({
               height: 32,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent:
+                "center",
               flexShrink: 0,
               overflow: "hidden",
             }}
@@ -419,9 +661,12 @@ export default function AdminLayout({
                 fontFamily:
                   "'Space Grotesk',sans-serif",
                 fontWeight: 700,
-                fontSize: "1.05rem",
-                color: "var(--text1)",
-                whiteSpace: "nowrap",
+                fontSize:
+                  "1.05rem",
+                color:
+                  "var(--text1)",
+                whiteSpace:
+                  "nowrap",
               }}
             >
               AI-CLUB
@@ -438,39 +683,51 @@ export default function AdminLayout({
             overflowY: "auto",
           }}
         >
-          {visibleNav.map((item) => {
-            const active =
-              pathname === item.href ||
-              pathname?.startsWith(
-                item.href + "/"
+          {visibleNav.map(
+            (item) => {
+              const active =
+                pathname ===
+                  item.href ||
+                pathname?.startsWith(
+                  item.href + "/"
+                );
+
+              const Icon =
+                item.icon;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={
+                    item.href
+                  }
+                  className={`sidebar-link ${
+                    active
+                      ? "active"
+                      : ""
+                  }`}
+                  title={
+                    collapsed
+                      ? item.label
+                      : undefined
+                  }
+                >
+                  <Icon
+                    size={17}
+                    className="icon"
+                  />
+
+                  {!collapsed && (
+                    <span>
+                      {
+                        item.label
+                      }
+                    </span>
+                  )}
+                </Link>
               );
-
-            const Icon = item.icon;
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`sidebar-link ${
-                  active ? "active" : ""
-                }`}
-                title={
-                  collapsed
-                    ? item.label
-                    : undefined
-                }
-              >
-                <Icon
-                  size={17}
-                  className="icon"
-                />
-
-                {!collapsed && (
-                  <span>{item.label}</span>
-                )}
-              </Link>
-            );
-          })}
+            }
+          )}
         </nav>
 
         {/* Bottom */}
@@ -483,16 +740,19 @@ export default function AdminLayout({
           }}
         >
           <button
-            onClick={handleLogout}
+            onClick={
+              handleLogout
+            }
             className="sidebar-link"
             style={{
               width: "100%",
               background: "none",
               border: "none",
               cursor: "pointer",
-              justifyContent: collapsed
-                ? "center"
-                : "flex-start",
+              justifyContent:
+                collapsed
+                  ? "center"
+                  : "flex-start",
             }}
             title={
               collapsed
@@ -506,7 +766,9 @@ export default function AdminLayout({
             />
 
             {!collapsed && (
-              <span>Logout</span>
+              <span>
+                Logout
+              </span>
             )}
           </button>
         </div>
@@ -518,32 +780,42 @@ export default function AdminLayout({
 
       <div
         className={`admin-main ${
-          collapsed ? "collapsed" : ""
+          collapsed
+            ? "collapsed"
+            : ""
         }`}
       >
         {/* Topbar */}
 
-        <header className="admin-topbar">
+        <header
+          className="admin-topbar"
+        >
           <button
             onClick={() =>
-              setCollapsed(!collapsed)
+              setCollapsed(
+                !collapsed
+              )
             }
             className="btn btn-ghost btn-icon"
             style={{
-              color: "var(--text2)",
+              color:
+                "var(--text2)",
             }}
           >
             {collapsed ? (
               <Menu size={18} />
             ) : (
-              <ChevronLeft size={18} />
+              <ChevronLeft
+                size={18}
+              />
             )}
           </button>
 
           <div
             style={{
               flex: 1,
-              paddingLeft: "1rem",
+              paddingLeft:
+                "1rem",
             }}
           >
             <span
@@ -551,8 +823,10 @@ export default function AdminLayout({
                 fontFamily:
                   "'Space Grotesk',sans-serif",
                 fontWeight: 600,
-                fontSize: "0.85rem",
-                color: "var(--text2)",
+                fontSize:
+                  "0.85rem",
+                color:
+                  "var(--text2)",
               }}
             >
               {currentPage}
@@ -562,7 +836,8 @@ export default function AdminLayout({
           <div
             style={{
               display: "flex",
-              alignItems: "center",
+              alignItems:
+                "center",
               gap: "0.5rem",
             }}
           >
@@ -571,21 +846,26 @@ export default function AdminLayout({
             <button
               className="btn btn-ghost btn-icon"
               style={{
-                color: "var(--text2)",
-                position: "relative",
+                color:
+                  "var(--text2)",
+                position:
+                  "relative",
               }}
             >
               <Bell size={18} />
 
               <span
                 style={{
-                  position: "absolute",
+                  position:
+                    "absolute",
                   top: 6,
                   right: 6,
                   width: 7,
                   height: 7,
-                  background: "var(--red)",
-                  borderRadius: "50%",
+                  background:
+                    "var(--red)",
+                  borderRadius:
+                    "50%",
                   border:
                     "2px solid var(--surface)",
                 }}
@@ -597,16 +877,22 @@ export default function AdminLayout({
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
+                alignItems:
+                  "center",
                 gap: "0.6rem",
-                paddingLeft: "0.5rem",
+                paddingLeft:
+                  "0.5rem",
                 borderLeft:
                   "1px solid var(--border2)",
-                marginLeft: "0.25rem",
+                marginLeft:
+                  "0.25rem",
               }}
             >
               <Avatar
-                name={user.name || "Admin"}
+                name={
+                  user.name ||
+                  "Admin"
+                }
                 size="sm"
                 index={0}
               />
@@ -617,26 +903,36 @@ export default function AdminLayout({
                     fontFamily:
                       "'Space Grotesk',sans-serif",
                     fontWeight: 700,
-                    fontSize: "0.8rem",
+                    fontSize:
+                      "0.8rem",
                   }}
                 >
-                  {user.name || "Admin"}
+                  {user.name ||
+                    "Admin"}
                 </div>
 
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
+                    display:
+                      "flex",
+                    alignItems:
+                      "center",
                     gap: "0.25rem",
-                    fontSize: "0.68rem",
-                    color: "var(--text3)",
+                    fontSize:
+                      "0.68rem",
+                    color:
+                      "var(--text3)",
                     fontFamily:
                       "'JetBrains Mono',monospace",
                   }}
                 >
-                  <Shield size={10} />
+                  <Shield
+                    size={10}
+                  />
 
-                  {getRoleLabel(user)}
+                  {getRoleLabel(
+                    user
+                  )}
                 </div>
               </div>
             </div>
