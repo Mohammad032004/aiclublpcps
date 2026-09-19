@@ -85,7 +85,69 @@ export default function AdminApplicationsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
+  // ─────────────────────────────────────────────
+  // Current user / admin status
+  // ─────────────────────────────────────────────
+
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const { confirm, Dialog } = useConfirm();
+
+  // ─────────────────────────────────────────────
+  // Load current logged-in user
+  // ─────────────────────────────────────────────
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCurrentUser = async () => {
+      try {
+        const response = await fetch(
+          "/api/auth/session",
+          {
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          if (mounted) {
+            setIsAdmin(false);
+          }
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!mounted) {
+          return;
+        }
+
+        setIsAdmin(
+          data?.authenticated === true &&
+            data?.user?.role === "admin"
+        );
+      } catch (error) {
+        console.error(
+          "Failed to load current user:",
+          error
+        );
+
+        if (mounted) {
+          setIsAdmin(false);
+        }
+      }
+    };
+
+    loadCurrentUser();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // ─────────────────────────────────────────────
+  // Load Applications
+  // ─────────────────────────────────────────────
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,13 +155,17 @@ export default function AdminApplicationsPage() {
     try {
       const { applications } =
         await applicationsApi.list(
-          filter === "all" ? undefined : filter
+          filter === "all"
+            ? undefined
+            : filter
         );
 
       setApps(applications);
     } catch (e: unknown) {
       showToast.error(
-        e instanceof Error ? e.message : "Failed"
+        e instanceof Error
+          ? e.message
+          : "Failed"
       );
     } finally {
       setLoading(false);
@@ -109,6 +175,10 @@ export default function AdminApplicationsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ─────────────────────────────────────────────
+  // Accept / Reject Application
+  // ─────────────────────────────────────────────
 
   const action = async (
     id: string,
@@ -138,20 +208,19 @@ export default function AdminApplicationsPage() {
       );
     } catch (e: unknown) {
       showToast.error(
-        e instanceof Error ? e.message : "Failed"
+        e instanceof Error
+          ? e.message
+          : "Failed"
       );
     } finally {
       setBusy(null);
     }
   };
 
-  /*
-   * Export all registrations to Excel.
-   *
-   * This intentionally calls applicationsApi.list()
-   * without the current filter so the exported file
-   * contains ALL registrations.
-   */
+  // ─────────────────────────────────────────────
+  // Export all registrations to Excel
+  // ─────────────────────────────────────────────
+
   const exportToExcel = async () => {
     setExporting(true);
 
@@ -174,24 +243,43 @@ export default function AdminApplicationsPage() {
           "S.No.": index + 1,
           "First Name": a.firstName || "",
           "Last Name": a.lastName || "",
-          "Full Name": `${a.firstName || ""} ${a.lastName || ""}`.trim(),
-          "Email": a.email || "",
-          "Phone": a.phone || "",
-          "Gender": a.gender || "",
-          "GitHub": a.github || "",
-          "LinkedIn": a.linkedin || "",
-          "Branch": a.branch || "",
-          "Year": a.year || "",
-          "Certifications": a.certifications || "",
-          "Technical Skills": Array.isArray(a.skills) ? a.skills.join(", ") : a.skills || "",
-          "Domains": Array.isArray(a.domains) ? a.domains.join(", ") : a.domains || "",
-          "Experience": a.experience || "",
-          "Project Description": a.projectDesc || "",
-          "Why Join": a.whyJoin || "",
-          "Contribution": a.contribution || "",
-          "Goals": a.goals || "",
-          "Status": a.status || "",
-          "Submitted At": a.submittedAt ? new Date(a.submittedAt).toLocaleString("en-IN") : "",
+          "Full Name":
+            `${a.firstName || ""} ${
+              a.lastName || ""
+            }`.trim(),
+          Email: a.email || "",
+          Phone: a.phone || "",
+          Gender: a.gender || "",
+          GitHub: a.github || "",
+          LinkedIn: a.linkedin || "",
+          Branch: a.branch || "",
+          Year: a.year || "",
+          Certifications:
+            a.certifications || "",
+          "Technical Skills":
+            Array.isArray(a.skills)
+              ? a.skills.join(", ")
+              : a.skills || "",
+          Domains:
+            Array.isArray(a.domains)
+              ? a.domains.join(", ")
+              : a.domains || "",
+          Experience:
+            a.experience || "",
+          "Project Description":
+            a.projectDesc || "",
+          "Why Join":
+            a.whyJoin || "",
+          Contribution:
+            a.contribution || "",
+          Goals: a.goals || "",
+          Status: a.status || "",
+          "Submitted At":
+            a.submittedAt
+              ? new Date(
+                  a.submittedAt
+                ).toLocaleString("en-IN")
+              : "",
         })
       );
 
@@ -276,7 +364,8 @@ export default function AdminApplicationsPage() {
       const blob = new Blob(
         ["\ufeff", table],
         {
-          type: "application/vnd.ms-excel;charset=utf-8;",
+          type:
+            "application/vnd.ms-excel;charset=utf-8;",
         }
       );
 
@@ -314,7 +403,20 @@ export default function AdminApplicationsPage() {
     }
   };
 
+  // ─────────────────────────────────────────────
+  // Delete Application
+  // ADMIN ONLY
+  // ─────────────────────────────────────────────
+
   const del = async (id: string) => {
+    // Frontend protection
+    if (!isAdmin) {
+      showToast.error(
+        "Only administrators can delete applications"
+      );
+      return;
+    }
+
     const ok = await confirm(
       "Delete this application permanently?"
     );
@@ -337,19 +439,35 @@ export default function AdminApplicationsPage() {
       showToast.success("Deleted");
     } catch (e: unknown) {
       showToast.error(
-        e instanceof Error ? e.message : "Failed"
+        e instanceof Error
+          ? e.message
+          : "Failed"
       );
     }
   };
 
+  // ─────────────────────────────────────────────
+  // Search / Filter
+  // ─────────────────────────────────────────────
+
   const filtered = apps.filter(
     (a) =>
-      `${a.firstName || ""} ${a.lastName || ""} ${a.email || ""} ${
+      `${a.firstName || ""} ${
+        a.lastName || ""
+      } ${a.email || ""} ${
         a.phone || ""
-      } ${a.gender || ""} ${a.branch || ""} ${a.year || ""} ${
+      } ${a.gender || ""} ${
+        a.branch || ""
+      } ${a.year || ""} ${
         a.certifications || ""
-      } ${Array.isArray(a.skills) ? a.skills.join(" ") : a.skills || ""} ${
-        Array.isArray(a.domains) ? a.domains.join(" ") : a.domains || ""
+      } ${
+        Array.isArray(a.skills)
+          ? a.skills.join(" ")
+          : a.skills || ""
+      } ${
+        Array.isArray(a.domains)
+          ? a.domains.join(" ")
+          : a.domains || ""
       } ${a.experience || ""}`
         .toLowerCase()
         .includes(
@@ -549,18 +667,23 @@ export default function AdminApplicationsPage() {
                     <th>
                       Applicant
                     </th>
+
                     <th>
                       Branch · Year
                     </th>
+
                     <th>
                       Skills
                     </th>
+
                     <th>
                       Status
                     </th>
+
                     <th>
                       Date
                     </th>
+
                     <th>
                       Actions
                     </th>
@@ -757,6 +880,7 @@ export default function AdminApplicationsPage() {
                               e.stopPropagation()
                             }
                           >
+                            {/* ACCEPT / REJECT */}
                             {a.status ===
                               "pending" && (
                               <>
@@ -822,6 +946,7 @@ export default function AdminApplicationsPage() {
                               </>
                             )}
 
+                            {/* DETAILS */}
                             <button
                               onClick={() =>
                                 setSelected(
@@ -841,21 +966,24 @@ export default function AdminApplicationsPage() {
                               />
                             </button>
 
-                            <button
-                              onClick={() =>
-                                del(
-                                  a._id
-                                )
-                              }
-                              className="btn btn-danger btn-icon btn-sm"
-                              title="Delete"
-                            >
-                              <Trash2
-                                size={
-                                  12
+                            {/* DELETE - ADMIN ONLY */}
+                            {isAdmin && (
+                              <button
+                                onClick={() =>
+                                  del(
+                                    a._id
+                                  )
                                 }
-                              />
-                            </button>
+                                className="btn btn-danger btn-icon btn-sm"
+                                title="Delete"
+                              >
+                                <Trash2
+                                  size={
+                                    12
+                                  }
+                                />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -942,7 +1070,9 @@ export default function AdminApplicationsPage() {
 
             <DetailRow
               label="Email"
-              value={selected.email}
+              value={
+                selected.email
+              }
             />
 
             <DetailRow
@@ -958,7 +1088,9 @@ export default function AdminApplicationsPage() {
 
             <DetailRow
               label="Gender"
-              value={selected.gender}
+              value={
+                selected.gender
+              }
             />
 
             <DetailRow
@@ -987,8 +1119,7 @@ export default function AdminApplicationsPage() {
                   "0.08em",
                 marginBottom:
                   "0.75rem",
-                marginTop:
-                  "1rem",
+                marginTop: "1rem",
                 paddingBottom:
                   "0.5rem",
                 borderBottom:
@@ -1024,8 +1155,7 @@ export default function AdminApplicationsPage() {
                   "0.08em",
                 marginBottom:
                   "0.75rem",
-                marginTop:
-                  "1rem",
+                marginTop: "1rem",
                 paddingBottom:
                   "0.5rem",
                 borderBottom:
@@ -1051,7 +1181,9 @@ export default function AdminApplicationsPage() {
 
             <DetailRow
               label="Certifications"
-              value={selected.certifications}
+              value={
+                selected.certifications
+              }
             />
 
             {/* EXPERIENCE & PROJECTS */}
@@ -1060,12 +1192,17 @@ export default function AdminApplicationsPage() {
                 fontSize: "0.72rem",
                 fontWeight: 700,
                 color: "var(--accent2)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                marginBottom: "0.75rem",
+                textTransform:
+                  "uppercase",
+                letterSpacing:
+                  "0.08em",
+                marginBottom:
+                  "0.75rem",
                 marginTop: "1rem",
-                paddingBottom: "0.5rem",
-                borderBottom: "1px solid var(--border2)",
+                paddingBottom:
+                  "0.5rem",
+                borderBottom:
+                  "1px solid var(--border2)",
               }}
             >
               Experience & Projects
@@ -1073,12 +1210,16 @@ export default function AdminApplicationsPage() {
 
             <DetailRow
               label="Experience"
-              value={selected.experience}
+              value={
+                selected.experience
+              }
             />
 
             <DetailRow
               label="Project Description"
-              value={selected.projectDesc}
+              value={
+                selected.projectDesc
+              }
             />
 
             {/* STATEMENT */}
@@ -1093,8 +1234,7 @@ export default function AdminApplicationsPage() {
                   "0.08em",
                 marginBottom:
                   "0.75rem",
-                marginTop:
-                  "1rem",
+                marginTop: "1rem",
                 paddingBottom:
                   "0.5rem",
                 borderBottom:
@@ -1120,7 +1260,9 @@ export default function AdminApplicationsPage() {
 
             <DetailRow
               label="Goals"
-              value={selected.goals}
+              value={
+                selected.goals
+              }
             />
 
             {/* ACTIONS */}
