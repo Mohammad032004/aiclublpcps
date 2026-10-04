@@ -72,7 +72,7 @@ export default function HomePage() {
 
         <div style={{ textAlign: "center", maxWidth: 820, position: "relative", zIndex: 1 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--green-bg)", border: "1px solid rgba(16,185,129,0.25)", padding: "0.3rem 1rem", borderRadius: 100, fontSize: "0.78rem", color: "var(--green)", fontWeight: 600, marginBottom: "1.75rem" }}>
-            <span className="status-dot green"/> Applications Open · Batch 2026
+            <span className="status-dot green"/> {/* Your heading/content here */}
           </div>
 
           <h1 style={{ fontSize: "clamp(2.5rem,7vw,5rem)", fontWeight: 800, lineHeight: 1.05, marginBottom: "1.5rem", letterSpacing: "-0.02em" }}>
